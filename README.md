@@ -133,6 +133,9 @@ Fetch a FreeScout ticket with all its details and conversation threads.
 }
 ```
 
+<img width="575" height="751" alt="image" src="https://github.com/user-attachments/assets/0144056d-f6d6-4275-9f55-dade0be3ba8c" />
+
+
 #### `freescout_analyze_ticket`
 Analyze a ticket to determine issue type, root cause, and suggested solutions.
 
@@ -155,6 +158,8 @@ Add an internal note to a ticket for team communication.
 - `note` (required): The note content
 - `userId` (optional): User ID for the note (defaults to env setting)
 
+<img width="570" height="691" alt="image" src="https://github.com/user-attachments/assets/19080021-1f29-45a4-8601-556b55d379c3" />
+
 #### `freescout_update_ticket`
 Update ticket status and/or assignment.
 
@@ -170,6 +175,8 @@ Generate a customer reply based on ticket analysis and fix description.
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `fixDescription` (optional): Description of the implemented fix
 - `isExplanatory` (optional): Whether this is an explanatory reply (no code changes)
+
+<img width="570" height="204" alt="image" src="https://github.com/user-attachments/assets/781d4a09-5605-4271-ac14-e133dd9f383d" />
 
 #### `freescout_search_tickets`
 Search for tickets across your FreeScout instance.
@@ -214,7 +221,7 @@ Create a GitHub pull request for the current branch. Automatically detects the r
 ### Workflow Automation
 
 #### `freescout_implement_ticket`
-Complete workflow automation: analyze ticket, create worktree, and prepare implementation plan.
+Complete workflow automation:  ticket, create worktree, and prepare implementation plan.
 
 **Parameters:**
 - `ticket` (required): Ticket ID, number, or FreeScout URL

@@ -69,7 +69,7 @@ export class TicketAnalyzer {
     const snippets: string[] = [];
     
     for (const thread of threads) {
-      const body = thread.body;
+      const body = thread.body || '';
       
       // Look for code blocks
       const codeBlockMatches = body.matchAll(/<pre[^>]*>.*?<\/pre>/gs);
@@ -87,7 +87,7 @@ export class TicketAnalyzer {
       }
       
       // Look for common code patterns in plain text
-      const lines = this.stripHtml(body).split('\n');
+      const lines = this.stripHtml(thread.body).split('\n');
       for (const line of lines) {
         if (this.looksLikeCode(line)) {
           snippets.push(line.trim());
@@ -246,7 +246,11 @@ export class TicketAnalyzer {
     };
   }
 
-  private stripHtml(html: string): string {
+  private stripHtml(html: string | null | undefined): string {
+    if (!html) {
+      return '';
+    }
+    
     return html
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
       .replace(/&nbsp;/g, ' ')   // Replace &nbsp;

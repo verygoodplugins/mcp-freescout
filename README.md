@@ -31,8 +31,7 @@ Add this to your Claude Desktop settings (`~/Library/Application Support/Claude/
 {
   "mcpServers": {
     "freescout": {
-      "command": "npx",
-      "args": ["@verygoodplugins/mcp-freescout@latest"],
+      "command": "npx @verygoodplugins/mcp-freescout@latest",
       "env": {
         "FREESCOUT_URL": "https://your-freescout-domain.com",
         "FREESCOUT_API_KEY": "your-api-key-here"
@@ -44,17 +43,28 @@ Add this to your Claude Desktop settings (`~/Library/Application Support/Claude/
 
 ### With Cursor IDE
 
-Add this to your Cursor settings.json:
+Add this to your Cursor MCP settings:
+
+**Method 1: Via Cursor Settings UI**
+1. Open Cursor Settings (Cmd/Ctrl + ,)
+2. Search for "MCP" 
+3. Click "Edit in settings.json"
+4. Add the MCP server configuration
+
+**Method 2: Manual Configuration**
+Add this to your Cursor settings.json or create `~/.cursor/mcp.json`:
 
 ```json
 {
-  "mcp.servers": {
-    "freescout": {
-      "command": "npx",
-      "args": ["@verygoodplugins/mcp-freescout@latest"],
-      "env": {
-        "FREESCOUT_URL": "https://your-freescout-domain.com",
-        "FREESCOUT_API_KEY": "your-api-key-here"
+  "mcp": {
+    "servers": {
+      "freescout": {
+        "command": "npx",
+        "args": ["@verygoodplugins/mcp-freescout@latest"],
+        "env": {
+          "FREESCOUT_URL": "https://your-freescout-domain.com",
+          "FREESCOUT_API_KEY": "your-api-key-here"
+        }
       }
     }
   }
@@ -389,8 +399,7 @@ For more control, you can specify additional environment variables:
 {
   "mcpServers": {
     "freescout": {
-      "command": "npx",
-      "args": ["@verygoodplugins/mcp-freescout@latest"],
+      "command": "npx @verygoodplugins/mcp-freescout@latest",
       "env": {
         "FREESCOUT_URL": "https://support.example.com",
         "FREESCOUT_API_KEY": "your-api-key",

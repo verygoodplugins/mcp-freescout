@@ -208,6 +208,8 @@ Create a draft reply in FreeScout that can be edited before sending. This tool l
 
 ![Draft reply generation showing personalized customer message with ticket context](https://github.com/user-attachments/assets/a4f9eb6c-3204-4744-8aed-8d16d7c7641c)
 
+![Draft reply automatically saved to FreeScout](https://github.com/user-attachments/assets/689bd675-cb34-414e-b18f-d50d4424ace6)
+
 #### `freescout_get_ticket_context`
 Get ticket context and customer information to help craft personalized replies.
 

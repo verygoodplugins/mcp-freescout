@@ -1,4 +1,4 @@
-# MCP FreeScout Server
+# FreeScout MCP Server
 
 An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management and workflow automation. This server provides tools to interact with FreeScout tickets, analyze issues, manage responses, and integrate with Git workflows.
 

@@ -77,5 +77,4 @@ export interface ImplementationPlan {
   filesToModify: string[];
   alternativeApproaches: string[];
   hasBreakingChanges: boolean;
-  requiresDocumentationUpdate: boolean;
 }

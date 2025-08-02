@@ -665,7 +665,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           filesToModify: [],
           alternativeApproaches: [],
           hasBreakingChanges: false,
-          requiresDocumentationUpdate: false,
         };
         
         const output = `# FreeScout Ticket #${ticketId} Implementation Plan

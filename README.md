@@ -398,8 +398,8 @@ MIT License - see LICENSE file for details
 ## Support
 
 For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Contact the maintainers
+- [Open an issue on GitHub](https://github.com/verygoodplugins/mcp-freescout/issues)
+- [Contact the maintainers](https://verygoodplugins.com/contact)
 - Check the documentation
 
 ## Roadmap

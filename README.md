@@ -340,7 +340,7 @@ Create a GitHub pull request for the current branch. Automatically detects the r
 ### Workflow Automation
 
 #### `freescout_implement_ticket`
-Complete workflow automation: analyze ticket, create worktree, and prepare implementation plan.
+workflow automation: analyze ticket, create worktree, and prepare implementation plan.
 
 **Parameters:**
 - `ticket` (required): Ticket ID, number, or FreeScout URL
@@ -434,7 +434,7 @@ await mcp.callTool('git_remove_worktree', {
   ticketId: '12345'
 });
 ```
-![Complete implementation workflow](https://github.com/user-attachments/assets/dd003100-acfe-420b-b9a8-4253d07545d4")
+![Complete implementation workflow](https://github.com/user-attachments/assets/dd003100-acfe-420b-b9a8-4253d07545d4)
 
 
 ### Draft Reply Workflow

@@ -16,11 +16,56 @@ An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management 
 ### Prerequisites
 
 - Node.js 18 or higher
-- npm or yarn
 - FreeScout instance with API access enabled
 - Git (for worktree management features)
 
-### Setup
+## Quick Start (Recommended)
+
+The easiest way to use this MCP server is with `npx`:
+
+### With Claude Desktop
+
+Add this to your Claude Desktop settings (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "freescout": {
+      "command": "npx",
+      "args": ["@verygoodplugins/mcp-freescout@latest"],
+      "env": {
+        "FREESCOUT_URL": "https://your-freescout-domain.com",
+        "FREESCOUT_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### With Cursor IDE
+
+Add this to your Cursor settings.json:
+
+```json
+{
+  "mcp.servers": {
+    "freescout": {
+      "command": "npx",
+      "args": ["@verygoodplugins/mcp-freescout@latest"],
+      "env": {
+        "FREESCOUT_URL": "https://your-freescout-domain.com",
+        "FREESCOUT_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+That's it! The server will automatically use your current workspace directory for Git operations.
+
+## Manual Installation (Alternative)
+
+If you prefer to install and run the server locally:
 
 1. Clone this repository:
 ```bash
@@ -33,29 +78,12 @@ cd mcp-freescout
 npm install
 ```
 
-3. Copy the environment template and configure:
-```bash
-cp .env.example .env
-```
-
-4. Edit `.env` with your FreeScout credentials:
-```env
-FREESCOUT_URL=https://your-freescout-domain.com
-FREESCOUT_API_KEY=your-api-key-here
-FREESCOUT_DEFAULT_USER_ID=1
-WORKING_DIRECTORY=/path/to/your/project
-```
-
-5. Build the TypeScript code:
+3. Build the TypeScript code:
 ```bash
 npm run build
 ```
 
-## Usage
-
-### With Claude Desktop
-
-Add this configuration to your Claude Desktop settings (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+4. Configure your MCP client to use the local installation:
 
 ```json
 {
@@ -65,44 +93,14 @@ Add this configuration to your Claude Desktop settings (`~/Library/Application S
       "args": ["/path/to/mcp-freescout/dist/index.js"],
       "env": {
         "FREESCOUT_URL": "https://your-freescout-domain.com",
-        "FREESCOUT_API_KEY": "your-api-key-here",
-        "FREESCOUT_DEFAULT_USER_ID": "1"
-        // WORKING_DIRECTORY is optional - defaults to current workspace
+        "FREESCOUT_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
 
-### With Cursor IDE
-
-Cursor has built-in MCP support. Add this configuration to your Cursor settings:
-
-1. Open Cursor Settings (Cmd/Ctrl + ,)
-2. Search for "MCP" or go to Extensions → Model Context Protocol
-3. Click "Edit in settings.json"
-4. Add the following configuration:
-
-```json
-{
-  "mcp.servers": {
-    "freescout": {
-      "command": "node",
-      "args": ["/path/to/mcp-freescout/dist/index.js"],
-      "env": {
-        "FREESCOUT_URL": "https://your-freescout-domain.com",
-        "FREESCOUT_API_KEY": "your-api-key-here",
-        "FREESCOUT_DEFAULT_USER_ID": "1"
-        // WORKING_DIRECTORY automatically uses current workspace
-      }
-    }
-  }
-}
-```
-
-**Note**: In Cursor, the server automatically uses the current workspace directory for Git operations, so you don't need to specify `WORKING_DIRECTORY` unless you want to override it.
-
-### With Other MCP Clients
+## Usage with Other MCP Clients
 
 Run the server directly:
 
@@ -196,6 +194,23 @@ Remove a Git worktree after work is complete.
 **Parameters:**
 - `ticketId` (required): Ticket ID of the worktree to remove
 
+#### `github_create_pr`
+Create a GitHub pull request for the current branch. Automatically detects the repository from git remote.
+
+**Parameters:**
+- `title` (required): PR title
+- `body` (required): PR description/body
+- `ticketId` (optional): FreeScout ticket ID for reference (adds link to PR body)
+- `branch` (optional): Branch name (defaults to current branch)
+- `baseBranch` (optional): Base branch (default: master)
+- `draft` (optional): Create as draft PR (default: false)
+
+**Features:**
+- Auto-detects GitHub repository from git remote (no configuration needed!)
+- Adds FreeScout ticket link to PR body when ticketId is provided
+- Supports draft PRs for work in progress
+- Uses GitHub CLI (gh) for authentication
+
 ### Workflow Automation
 
 #### `freescout_implement_ticket`
@@ -232,26 +247,42 @@ const plan = await mcp.callTool('freescout_implement_ticket', {
   additionalContext: 'Consider backward compatibility'
 });
 
-// 2. After implementing the fix, draft a customer reply
+// 2. After implementing the fix, create a GitHub PR
+await mcp.callTool('github_create_pr', {
+  title: 'Fix: Validation error in checkout (FreeScout #12345)',
+  body: `## Summary
+Fixes the validation error reported in the checkout process.
+
+## Changes
+- Fixed validation logic in checkout.js
+- Added error handling for edge cases
+
+## Testing
+- Tested with various input combinations
+- All existing tests pass`,
+  ticketId: '12345'  // Automatically adds FreeScout link to PR
+});
+
+// 3. Draft a customer reply
 const reply = await mcp.callTool('freescout_draft_reply', {
   ticket: '12345',
   fixDescription: 'Fixed the validation error in the checkout process'
 });
 
-// 3. Add the draft as an internal note for review
+// 4. Add the draft as an internal note for review
 await mcp.callTool('freescout_add_note', {
   ticket: '12345',
   note: `Draft reply for customer:\n\n${reply}`
 });
 
-// 4. Update ticket status and assignment
+// 5. Update ticket status and assignment
 await mcp.callTool('freescout_update_ticket', {
   ticket: '12345',
   status: 'active',
   assignTo: 1
 });
 
-// 5. Clean up the worktree after PR is created
+// 6. Clean up the worktree after PR is created
 await mcp.callTool('git_remove_worktree', {
   ticketId: '12345'
 });
@@ -323,18 +354,48 @@ npm run build
 
 ## Configuration
 
-### Environment Variables
+### Required Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `FREESCOUT_URL` | Your FreeScout instance URL | Yes | - |
-| `FREESCOUT_API_KEY` | FreeScout API key | Yes | - |
-| `FREESCOUT_DEFAULT_USER_ID` | Default user ID for assignments | No | 1 |
-| `WORKING_DIRECTORY` | Base directory for Git operations | No | Current working directory¹ |
-| `GITHUB_TOKEN` | GitHub token for PR creation | No | - |
-| `GITHUB_REPO` | GitHub repository (owner/repo) | No | - |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `FREESCOUT_URL` | Your FreeScout instance URL | `https://support.example.com` |
+| `FREESCOUT_API_KEY` | FreeScout API key | `your-api-key-here` |
 
-¹ **Note on WORKING_DIRECTORY**: This defaults to the current working directory (`process.cwd()`). In Cursor and Claude Desktop, this typically means the currently open project/workspace. You only need to set this if you want to work on a different directory than where the MCP client is running.
+### Optional Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FREESCOUT_DEFAULT_USER_ID` | Default user ID for assignments | `1` |
+| `WORKING_DIRECTORY` | Base directory for Git operations | Current working directory¹ |
+| `GITHUB_TOKEN` | GitHub token for PR creation | - |
+| `GITHUB_REPO` | GitHub repository (owner/repo) | Auto-detected from git remote² |
+
+¹ **Note**: Automatically uses the current project/workspace directory. Only set this if you need to work on a different directory.
+
+² **Note**: The server automatically detects the GitHub repository from your git remote. Only set `GITHUB_REPO` if you need to override the auto-detection or if your project doesn't have a GitHub remote configured.
+
+### Advanced Configuration Example
+
+For more control, you can specify additional environment variables:
+
+```json
+{
+  "mcpServers": {
+    "freescout": {
+      "command": "npx",
+      "args": ["@verygoodplugins/mcp-freescout@latest"],
+      "env": {
+        "FREESCOUT_URL": "https://support.example.com",
+        "FREESCOUT_API_KEY": "your-api-key",
+        "FREESCOUT_DEFAULT_USER_ID": "2",
+        "WORKING_DIRECTORY": "/path/to/specific/project",
+        "GITHUB_TOKEN": "ghp_yourtoken",
+        "GITHUB_REPO": "owner/repo"
+      }
+    }
+  }
+}
+```
 
 ### FreeScout API Setup
 
@@ -393,7 +454,7 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License - see LICENSE file for details
+GPL-3.0 License - see LICENSE file for details
 
 ## Support
 

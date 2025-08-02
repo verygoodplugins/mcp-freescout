@@ -4,7 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ToolSchema,
+  Tool,
   TextContentSchema,
   ImageContentSchema,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -26,6 +26,46 @@ const DEFAULT_USER_ID = parseInt(process.env.FREESCOUT_DEFAULT_USER_ID || '1');
 // WORKING_DIRECTORY defaults to current working directory if not specified
 // This allows the server to work with the current project context automatically
 const WORKING_DIRECTORY = process.env.WORKING_DIRECTORY || process.cwd();
+
+// Helper function to extract GitHub repo from git remote
+function getGitHubRepo(): string | undefined {
+  if (process.env.GITHUB_REPO) {
+    return process.env.GITHUB_REPO;
+  }
+  
+  try {
+    // Try to get the GitHub remote URL
+    const remoteUrl = execSync('git remote get-url origin 2>/dev/null', { 
+      cwd: WORKING_DIRECTORY,
+      encoding: 'utf-8' 
+    }).trim();
+    
+    // Parse GitHub repo from various URL formats
+    // SSH: git@github.com:owner/repo.git
+    // HTTPS: https://github.com/owner/repo.git
+    // HTTPS no .git: https://github.com/owner/repo
+    
+    let match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/.]+)(\.git)?$/);
+    if (match) {
+      return match[1];
+    }
+    
+    // Try without .git extension
+    match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/]+)$/);
+    if (match) {
+      return match[1];
+    }
+  } catch (error) {
+    // Git command failed or no remote found
+    console.error('Could not auto-detect GitHub repository. Set GITHUB_REPO environment variable if needed.');
+  }
+  
+  return undefined;
+}
+
+// Get GitHub configuration
+const GITHUB_REPO = getGitHubRepo();
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 if (!FREESCOUT_URL || !FREESCOUT_API_KEY) {
   console.error('Missing required environment variables: FREESCOUT_URL and FREESCOUT_API_KEY');
@@ -50,7 +90,7 @@ const server = new Server(
 );
 
 // Define tool schemas
-const tools: ToolSchema[] = [
+const tools: Tool[] = [
   {
     name: 'freescout_get_ticket',
     description: 'Fetch and analyze a FreeScout ticket by ID or URL',
@@ -209,6 +249,42 @@ const tools: ToolSchema[] = [
     },
   },
   {
+    name: 'github_create_pr',
+    description: 'Create a GitHub pull request for the current branch',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'PR title',
+        },
+        body: {
+          type: 'string',
+          description: 'PR description/body',
+        },
+        ticketId: {
+          type: 'string',
+          description: 'FreeScout ticket ID for reference',
+        },
+        branch: {
+          type: 'string',
+          description: 'Branch name (defaults to current branch)',
+        },
+        baseBranch: {
+          type: 'string',
+          description: 'Base branch (default: master)',
+          default: 'master',
+        },
+        draft: {
+          type: 'boolean',
+          description: 'Create as draft PR (default: false)',
+          default: false,
+        },
+      },
+      required: ['title', 'body'],
+    },
+  },
+  {
     name: 'freescout_implement_ticket',
     description: 'Full workflow: analyze ticket, create worktree, and prepare implementation plan',
     inputSchema: {
@@ -242,7 +318,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { name, arguments: args } = request.params || {};
+  if (!args) {
+    throw new Error('Arguments are missing');
+  }
 
   try {
     switch (name) {
@@ -422,6 +501,83 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
+      case 'github_create_pr': {
+        if (!GITHUB_TOKEN) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: '⚠️ GitHub token not configured. Please set GITHUB_TOKEN environment variable to create PRs.',
+              },
+            ],
+          };
+        }
+
+        if (!GITHUB_REPO) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: '⚠️ Could not detect GitHub repository. Please ensure you are in a Git repository with a GitHub remote, or set GITHUB_REPO environment variable.',
+              },
+            ],
+          };
+        }
+
+        const title = args.title as string;
+        const body = args.body as string;
+        const ticketId = args.ticketId as string;
+        const branch = args.branch as string || '';
+        const baseBranch = args.baseBranch as string || 'master';
+        const draft = args.draft as boolean || false;
+
+        try {
+          // If ticketId is provided, add FreeScout link to the body
+          let enhancedBody = body;
+          if (ticketId) {
+            enhancedBody = `${body}\n\n---\n\nFreeScout Ticket: ${FREESCOUT_URL}/conversation/${ticketId}`;
+          }
+
+          // Create the PR using GitHub CLI
+          const draftFlag = draft ? '--draft' : '';
+          const branchFlag = branch ? `--head ${branch}` : '';
+          
+          const command = `gh pr create --repo ${GITHUB_REPO} --title "${title.replace(/"/g, '\\"')}" --body "${enhancedBody.replace(/"/g, '\\"')}" --base ${baseBranch} ${draftFlag} ${branchFlag}`.trim();
+          
+          const result = execSync(command, { 
+            cwd: WORKING_DIRECTORY,
+            encoding: 'utf-8',
+            env: {
+              ...process.env,
+              GH_TOKEN: GITHUB_TOKEN,
+            }
+          }).trim();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✅ Pull request created successfully!\n\n${result}`,
+              },
+            ],
+          };
+        } catch (error: any) {
+          // Check if gh CLI is installed
+          if (error.message.includes('gh: command not found')) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '⚠️ GitHub CLI (gh) is not installed. Please install it from https://cli.github.com/ or create the PR manually.',
+                },
+              ],
+            };
+          }
+          
+          throw new Error(`Failed to create PR: ${error.message}`);
+        }
+      }
+
       case 'freescout_implement_ticket': {
         const ticketId = api.parseTicketInput(args.ticket as string);
         const conversation = await api.getConversation(ticketId, true);
@@ -486,11 +642,13 @@ ${args.additionalContext ? `## Additional Context\n${args.additionalContext}` : 
 
 ${worktreeInfo}
 
+${GITHUB_REPO ? `## GitHub Repository\n- Repository: ${GITHUB_REPO}\n- Ready for PR creation with \`github_create_pr\` tool` : '## GitHub Repository\n- ⚠️ No GitHub repository detected. Set GITHUB_REPO env variable if needed.'}
+
 ## Next Steps
 1. Review the analysis above
 2. ${analysis.isBug ? 'Implement the fix in the worktree' : 'Draft an explanatory reply'}
 3. Test the changes
-4. Create a pull request
+4. Create a pull request${GITHUB_REPO ? ' using `github_create_pr` tool' : ''}
 5. Update the FreeScout ticket`;
 
         return {

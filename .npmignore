@@ -1,0 +1,48 @@
+# Source files (only distribute compiled JS)
+src/
+*.ts
+!*.d.ts
+
+# Development files
+.env
+.env.*
+*.log
+node_modules/
+coverage/
+.nyc_output/
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Examples and docs source
+*.example.*
+cursor-config.example.json
+claude-desktop-config.example.json
+
+# Test files
+*.test.js
+*.test.ts
+jest.config.*
+__tests__/
+
+# Build files
+tsconfig.json
+.eslintrc.*
+.prettierrc.*
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+worktrees/
+
+# Keep these
+!dist/
+!README.md
+!LICENSE
+!package.json

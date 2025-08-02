@@ -160,6 +160,8 @@ Analyze a ticket to determine issue type, root cause, and suggested solutions.
 - Root cause analysis
 - Bug vs feature request vs third-party issue determination
 
+<img width="570" height="691" alt="image" src="https://github.com/user-attachments/assets/19080021-1f29-45a4-8601-556b55d379c3" />
+
 #### `freescout_add_note`
 Add an internal note to a ticket for team communication.
 
@@ -167,8 +169,6 @@ Add an internal note to a ticket for team communication.
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `note` (required): The note content
 - `userId` (optional): User ID for the note (defaults to env setting)
-
-<img width="570" height="691" alt="image" src="https://github.com/user-attachments/assets/19080021-1f29-45a4-8601-556b55d379c3" />
 
 #### `freescout_update_ticket`
 Update ticket status and/or assignment.
@@ -191,6 +191,8 @@ Create a draft reply in FreeScout that can be edited before sending. This tool l
 2. Let the LLM craft a personalized reply based on the context
 3. Use `freescout_create_draft_reply` to save the draft in FreeScout
 4. Review and edit the draft in FreeScout before sending
+
+<img width="572" height="522" alt="image" src="https://github.com/user-attachments/assets/a4f9eb6c-3204-4744-8aed-8d16d7c7641c" />
 
 #### `freescout_get_ticket_context`
 Get ticket context and customer information to help craft personalized replies.

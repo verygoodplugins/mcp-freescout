@@ -1,0 +1,15 @@
+{
+  "mcp.servers": {
+    "freescout": {
+      "command": "node",
+      "args": [
+        "/Users/yourusername/Projects/mcp-servers/mcp-freescout/dist/index.js"
+      ],
+      "env": {
+        "FREESCOUT_URL": "https://your-freescout-instance.com",
+        "FREESCOUT_API_KEY": "your-freescout-api-key-here",
+        "FREESCOUT_DEFAULT_USER_ID": "1"
+      }
+    }
+  }
+}

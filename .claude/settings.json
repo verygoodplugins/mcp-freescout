@@ -1,0 +1,60 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "MultiEdit",
+      "Read",
+      "Bash(composer:*)",
+      "Bash(npm:*)",
+      "Bash(gulp:*)",
+      "Bash(phpunit:*)",
+      "Bash(phpcs:*)",
+      "Bash(phpcbf:*)",
+      "Bash(phpstan:*)",
+      "Bash(git:*)",
+      "Bash(wp:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(jq:*)",
+      "Bash(echo:*)",
+      "Bash(gh:*)",
+      "Bash(php -l:*)",
+      "WebFetch",
+      "WebFetch(domain:wpfusion.com)",
+      "WebSearch",
+      "Bash(curl -s \"https://wpfusion.com/wp-json/*\")",
+      "Bash(curl -u \"$WPF_DOCS_USER:$WPF_DOCS_PASSWORD\" \"https://wpfusion.com/wp-json/*\")",
+      "Bash(curl -H \"Authorization: Basic*\" \"https://wpfusion.com/wp-json/*\")",
+      "Bash(curl -s -H \"Authorization: Basic*\" \"$WPF_DOCS_URL/wp-json/*\")",
+      "Bash(curl -X POST:*)",
+      "Bash(curl -X PUT:*)",
+      "Bash(curl -X PATCH:*)",
+      "Bash(curl -H \"Content-Type: application/json\":*)",
+      "Bash(base64:*)",
+      "Bash(fi)",
+      "Bash(./vendor/bin/*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(rm -rf /*)",
+      "Bash(format:*)",
+      "Bash(fdisk:*)"
+    ]
+  },
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "true",
+    "DISABLE_COST_WARNINGS": "0",
+    "BASH_MAX_OUTPUT_LENGTH": "50000"
+  }
+} 

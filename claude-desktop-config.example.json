@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "freescout": {
+      "command": "node",
+      "args": [
+        "/Users/yourusername/Projects/mcp-servers/mcp-freescout/dist/index.js"
+      ],
+      "env": {
+        "FREESCOUT_URL": "https://your-freescout-instance.com",
+        "FREESCOUT_API_KEY": "your-freescout-api-key-here",
+        "FREESCOUT_DEFAULT_USER_ID": "1"
+        // Optional - defaults to current working directory:
+        // "WORKING_DIRECTORY": "/Users/yourusername/Projects/your-project",
+        // "GITHUB_TOKEN": "optional-github-token-for-pr-creation",
+        // "GITHUB_REPO": "owner/repo"
+      }
+    }
+  }
+}

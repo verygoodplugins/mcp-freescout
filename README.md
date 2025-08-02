@@ -64,7 +64,8 @@ Add this to your Cursor settings.json or create `~/.cursor/mcp.json`:
         "args": ["@verygoodplugins/mcp-freescout@latest"],
         "env": {
           "FREESCOUT_URL": "https://your-freescout-domain.com",
-          "FREESCOUT_API_KEY": "your-api-key-here"
+          "FREESCOUT_API_KEY": "your-api-key-here",
+          "WORKING_DIRECTORY": "${workspaceFolder}"
         }
       }
     }
@@ -104,7 +105,8 @@ npm run build
       "args": ["/path/to/mcp-freescout/dist/index.js"],
       "env": {
         "FREESCOUT_URL": "https://your-freescout-domain.com",
-        "FREESCOUT_API_KEY": "your-api-key-here"
+        "FREESCOUT_API_KEY": "your-api-key-here",
+        "WORKING_DIRECTORY": "/path/to/your/project"
       }
     }
   }

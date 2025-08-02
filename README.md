@@ -430,6 +430,8 @@ await mcp.callTool('git_remove_worktree', {
   ticketId: '12345'
 });
 ```
+![Complete implementation workflow](https://github.com/user-attachments/assets/dd003100-acfe-420b-b9a8-4253d07545d4")
+
 
 ### Draft Reply Workflow
 ```javascript

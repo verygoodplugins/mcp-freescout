@@ -246,7 +246,7 @@ export class TicketAnalyzer {
     };
   }
 
-  private stripHtml(html: string | null | undefined): string {
+  stripHtml(html: string | null | undefined): string {
     if (!html) {
       return '';
     }

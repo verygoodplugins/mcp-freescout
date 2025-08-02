@@ -57,7 +57,8 @@ export class FreeScoutAPI {
     ticketId: string,
     type: 'note' | 'message' | 'customer',
     text: string,
-    userId?: number
+    userId?: number,
+    state?: 'draft' | 'published'
   ): Promise<FreeScoutThread> {
     const body: any = {
       type,
@@ -68,11 +69,23 @@ export class FreeScoutAPI {
       body.user = userId;
     }
 
+    if (state) {
+      body.state = state;
+    }
+
     return this.request<FreeScoutThread>(
       `/conversations/${ticketId}/threads`,
       'POST',
       body
     );
+  }
+
+  async createDraftReply(
+    ticketId: string,
+    text: string,
+    userId: number
+  ): Promise<FreeScoutThread> {
+    return this.addThread(ticketId, 'message', text, userId, 'draft');
   }
 
   async updateConversation(

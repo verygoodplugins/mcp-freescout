@@ -18,6 +18,7 @@ An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management 
 - Node.js 18 or higher
 - FreeScout instance with API access enabled
 - Git (for worktree management features)
+- GitHub CLI (`gh`) for GitHub integration (install from https://cli.github.com/)
 
 ## Quick Start (Recommended)
 
@@ -328,10 +329,11 @@ Create a GitHub pull request for the current branch. Automatically detects the r
 - "Create a draft PR for the current branch"
 
 **Features:**
-- Auto-detects GitHub repository from git remote (no configuration needed!)
+- Auto-detects GitHub repository using GitHub CLI (no configuration needed!)
 - Adds FreeScout ticket link to PR body when ticketId is provided
 - Supports draft PRs for work in progress
-- Uses GitHub CLI (gh) for authentication
+- Uses GitHub CLI (`gh`) for authentication - no tokens required!
+- Requires: `gh` installed and authenticated (`gh auth login`)
 
 ### Workflow Automation
 
@@ -544,12 +546,11 @@ npm run build
 |----------|-------------|---------|
 | `FREESCOUT_DEFAULT_USER_ID` | Default user ID for assignments | `1` |
 | `WORKING_DIRECTORY` | Base directory for Git operations | Current working directory¹ |
-| `GITHUB_TOKEN` | GitHub token for PR creation | - |
-| `GITHUB_REPO` | GitHub repository (owner/repo) | Auto-detected from git remote² |
+| `GITHUB_REPO` | GitHub repository (owner/repo) | Auto-detected using `gh`² |
 
 ¹ **Note**: Automatically uses the current project/workspace directory. Only set this if you need to work on a different directory.
 
-² **Note**: The server automatically detects the GitHub repository from your git remote. Only set `GITHUB_REPO` if you need to override the auto-detection or if your project doesn't have a GitHub remote configured.
+² **Note**: The server automatically detects the GitHub repository using GitHub CLI (`gh`). Requires `gh` to be installed and authenticated (`gh auth login`). Only set `GITHUB_REPO` if you need to override the auto-detection.
 
 ### Advanced Configuration Example
 
@@ -565,7 +566,6 @@ For more control, you can specify additional environment variables:
         "FREESCOUT_API_KEY": "your-api-key",
         "FREESCOUT_DEFAULT_USER_ID": "2",
         "WORKING_DIRECTORY": "/path/to/specific/project",
-        "GITHUB_TOKEN": "ghp_yourtoken",
         "GITHUB_REPO": "owner/repo"
       }
     }

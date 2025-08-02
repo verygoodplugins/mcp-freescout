@@ -27,45 +27,60 @@ const DEFAULT_USER_ID = parseInt(process.env.FREESCOUT_DEFAULT_USER_ID || '1');
 // This allows the server to work with the current project context automatically
 const WORKING_DIRECTORY = process.env.WORKING_DIRECTORY || process.cwd();
 
-// Helper function to extract GitHub repo from git remote
+// Helper function to check if GitHub CLI is available
+function isGhAvailable(): boolean {
+  try {
+    execSync('gh --version', { 
+      stdio: 'pipe',
+      timeout: 5000
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Helper function to get GitHub repo using gh CLI
 function getGitHubRepo(): string | undefined {
   if (process.env.GITHUB_REPO) {
     return process.env.GITHUB_REPO;
   }
   
-  try {
-    // Try to get the GitHub remote URL
-    const remoteUrl = execSync('git remote get-url origin 2>/dev/null', { 
-      cwd: WORKING_DIRECTORY,
-      encoding: 'utf-8' 
-    }).trim();
-    
-    // Parse GitHub repo from various URL formats
-    // SSH: git@github.com:owner/repo.git
-    // HTTPS: https://github.com/owner/repo.git
-    // HTTPS no .git: https://github.com/owner/repo
-    
-    let match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/.]+)(\.git)?$/);
-    if (match) {
-      return match[1];
-    }
-    
-    // Try without .git extension
-    match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/]+)$/);
-    if (match) {
-      return match[1];
-    }
-  } catch (error) {
-    // Git command failed or no remote found
-    console.error('Could not auto-detect GitHub repository. Set GITHUB_REPO environment variable if needed.');
+  if (!isGhAvailable()) {
+    return undefined;
   }
   
-  return undefined;
+  try {
+    // Use gh to get repo info - this is more reliable than parsing git remotes
+    const repoInfo = execSync('gh repo view --json nameWithOwner', { 
+      cwd: WORKING_DIRECTORY,
+      encoding: 'utf-8',
+      stdio: 'pipe'
+    }).trim();
+    
+    const parsed = JSON.parse(repoInfo);
+    return parsed.nameWithOwner;
+  } catch (error) {
+    // gh command failed - might not be in a GitHub repo or not authenticated
+    return undefined;
+  }
 }
 
-// Get GitHub configuration
+// Helper function to check if Git operations are available  
+function isGitAvailable(): boolean {
+  try {
+    execSync('git --version', { 
+      stdio: 'pipe',
+      timeout: 5000
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Get GitHub configuration - no token needed, gh CLI handles auth
 const GITHUB_REPO = getGitHubRepo();
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 if (!FREESCOUT_URL || !FREESCOUT_API_KEY) {
   console.error('Missing required environment variables: FREESCOUT_URL and FREESCOUT_API_KEY');
@@ -500,6 +515,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'git_create_worktree': {
+        if (!isGitAvailable()) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: '⚠️ Git is not available in this environment. Please create the worktree manually:\n\n' +
+                      `git worktree add worktrees/ticket-${args.ticketId} -b ${args.branchName || `fix/freescout-${args.ticketId}`} ${args.baseBranch || 'master'}`,
+              },
+            ],
+          };
+        }
+
         const ticketId = args.ticketId as string;
         const branchName = args.branchName || `fix/freescout-${ticketId}`;
         const baseBranch = args.baseBranch || 'master';
@@ -507,19 +534,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         try {
           // Create worktrees directory if it doesn't exist
-          execSync(`mkdir -p ${WORKING_DIRECTORY}/worktrees`, { cwd: WORKING_DIRECTORY });
+          execSync(`mkdir -p "${WORKING_DIRECTORY}/worktrees"`, { 
+            cwd: WORKING_DIRECTORY,
+            stdio: 'pipe'
+          });
           
           // Create worktree
           execSync(
             `git worktree add "${worktreeDir}" -b "${branchName}" ${baseBranch}`,
-            { cwd: WORKING_DIRECTORY }
+            { 
+              cwd: WORKING_DIRECTORY,
+              stdio: 'pipe'
+            }
           );
           
           // Add to .gitignore if needed
           try {
-            const gitignore = execSync(`cat ${WORKING_DIRECTORY}/.gitignore`, { encoding: 'utf-8' });
+            const gitignore = execSync(`cat "${WORKING_DIRECTORY}/.gitignore"`, { 
+              encoding: 'utf-8',
+              stdio: 'pipe'
+            });
             if (!gitignore.includes('worktrees/')) {
-              execSync(`echo "worktrees/" >> ${WORKING_DIRECTORY}/.gitignore`, { cwd: WORKING_DIRECTORY });
+              execSync(`echo "worktrees/" >> "${WORKING_DIRECTORY}/.gitignore"`, { 
+                cwd: WORKING_DIRECTORY,
+                stdio: 'pipe'
+              });
             }
           } catch {
             // .gitignore might not exist
@@ -534,16 +573,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         } catch (error: any) {
-          throw new Error(`Failed to create worktree: ${error.message}`);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `⚠️ Could not create worktree automatically: ${error.message}\n\nPlease create manually:\ngit worktree add worktrees/ticket-${ticketId} -b ${branchName} ${baseBranch}`,
+              },
+            ],
+          };
         }
       }
 
       case 'git_remove_worktree': {
+        if (!isGitAvailable()) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `⚠️ Git is not available in this environment. Please remove the worktree manually:\n\ngit worktree remove worktrees/ticket-${args.ticketId}`,
+              },
+            ],
+          };
+        }
+
         const ticketId = args.ticketId as string;
         const worktreeDir = `${WORKING_DIRECTORY}/worktrees/ticket-${ticketId}`;
         
         try {
-          execSync(`git worktree remove "${worktreeDir}"`, { cwd: WORKING_DIRECTORY });
+          execSync(`git worktree remove "${worktreeDir}"`, { 
+            cwd: WORKING_DIRECTORY,
+            stdio: 'pipe'
+          });
           
           return {
             content: [
@@ -554,17 +614,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         } catch (error: any) {
-          throw new Error(`Failed to remove worktree: ${error.message}`);
-        }
-      }
-
-      case 'github_create_pr': {
-        if (!GITHUB_TOKEN) {
           return {
             content: [
               {
                 type: 'text',
-                text: '⚠️ GitHub token not configured. Please set GITHUB_TOKEN environment variable to create PRs.',
+                text: `⚠️ Could not remove worktree automatically: ${error.message}\n\nPlease remove manually:\ngit worktree remove worktrees/ticket-${ticketId}`,
+              },
+            ],
+          };
+        }
+      }
+
+      case 'github_create_pr': {
+        if (!isGhAvailable()) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: '⚠️ GitHub CLI (gh) is not installed or available. Please install it from https://cli.github.com/ and ensure you are authenticated with `gh auth login`.',
               },
             ],
           };
@@ -575,7 +642,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             content: [
               {
                 type: 'text',
-                text: '⚠️ Could not detect GitHub repository. Please ensure you are in a Git repository with a GitHub remote, or set GITHUB_REPO environment variable.',
+                text: '⚠️ Could not detect GitHub repository. Please ensure you are in a Git repository connected to GitHub, or set GITHUB_REPO environment variable.',
               },
             ],
           };
@@ -595,19 +662,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             enhancedBody = `${body}\n\n---\n\nFreeScout Ticket: ${FREESCOUT_URL}/conversation/${ticketId}`;
           }
 
-          // Create the PR using GitHub CLI
-          const draftFlag = draft ? '--draft' : '';
-          const branchFlag = branch ? `--head ${branch}` : '';
+          // Create the PR using GitHub CLI (no token needed - gh handles auth)
+          const args_array = ['pr', 'create'];
           
-          const command = `gh pr create --repo ${GITHUB_REPO} --title "${title.replace(/"/g, '\\"')}" --body "${enhancedBody.replace(/"/g, '\\"')}" --base ${baseBranch} ${draftFlag} ${branchFlag}`.trim();
+          if (GITHUB_REPO) {
+            args_array.push('--repo', GITHUB_REPO);
+          }
           
-          const result = execSync(command, { 
+          args_array.push('--title', title);
+          args_array.push('--body', enhancedBody);
+          args_array.push('--base', baseBranch);
+          
+          if (draft) {
+            args_array.push('--draft');
+          }
+          
+          if (branch) {
+            args_array.push('--head', branch);
+          }
+          
+          const result = execSync(`gh ${args_array.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(' ')}`, { 
             cwd: WORKING_DIRECTORY,
             encoding: 'utf-8',
-            env: {
-              ...process.env,
-              GH_TOKEN: GITHUB_TOKEN,
-            }
+            stdio: 'pipe'
           }).trim();
 
           return {
@@ -619,19 +696,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         } catch (error: any) {
-          // Check if gh CLI is installed
-          if (error.message.includes('gh: command not found')) {
+          // Handle authentication errors
+          if (error.message.includes('not authenticated') || error.message.includes('authentication')) {
             return {
               content: [
                 {
                   type: 'text',
-                  text: '⚠️ GitHub CLI (gh) is not installed. Please install it from https://cli.github.com/ or create the PR manually.',
+                  text: '⚠️ GitHub CLI is not authenticated. Please run `gh auth login` to authenticate with GitHub.',
                 },
               ],
             };
           }
           
-          throw new Error(`Failed to create PR: ${error.message}`);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `⚠️ Failed to create PR: ${error.message}\n\nPlease ensure:\n1. You are authenticated: \`gh auth login\`\n2. You are in a GitHub repository\n3. Your branch is pushed to GitHub`,
+              },
+            ],
+          };
         }
       }
 
@@ -642,19 +726,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         let worktreeInfo = '';
         if (args.autoCreateWorktree !== false) {
-          try {
+          if (!isGitAvailable()) {
             const branchName = `fix/freescout-${ticketId}`;
-            const worktreeDir = `${WORKING_DIRECTORY}/worktrees/ticket-${ticketId}`;
-            
-            execSync(`mkdir -p ${WORKING_DIRECTORY}/worktrees`, { cwd: WORKING_DIRECTORY });
-            execSync(
-              `git worktree add "${worktreeDir}" -b "${branchName}" master`,
-              { cwd: WORKING_DIRECTORY }
-            );
-            
-            worktreeInfo = `\n\n## Git Worktree Created\n- Branch: ${branchName}\n- Location: ${worktreeDir}`;
-          } catch (error: any) {
-            worktreeInfo = `\n\n⚠️ Could not create worktree: ${error.message}`;
+            worktreeInfo = `\n\n## Git Worktree (Manual Setup Required)\n⚠️ Git is not available in this environment. Please create manually:\n\`\`\`bash\ngit worktree add worktrees/ticket-${ticketId} -b ${branchName} master\n\`\`\``;
+          } else {
+            try {
+              const branchName = `fix/freescout-${ticketId}`;
+              const worktreeDir = `${WORKING_DIRECTORY}/worktrees/ticket-${ticketId}`;
+              
+              execSync(`mkdir -p "${WORKING_DIRECTORY}/worktrees"`, { 
+                cwd: WORKING_DIRECTORY,
+                stdio: 'pipe'
+              });
+              execSync(
+                `git worktree add "${worktreeDir}" -b "${branchName}" master`,
+                { 
+                  cwd: WORKING_DIRECTORY,
+                  stdio: 'pipe'
+                }
+              );
+              
+              worktreeInfo = `\n\n## Git Worktree Created\n- Branch: ${branchName}\n- Location: ${worktreeDir}`;
+            } catch (error: any) {
+              const branchName = `fix/freescout-${ticketId}`;
+              worktreeInfo = `\n\n## Git Worktree (Manual Setup Required)\n⚠️ Could not create automatically: ${error.message}\n\nPlease create manually:\n\`\`\`bash\ngit worktree add worktrees/ticket-${ticketId} -b ${branchName} master\n\`\`\``;
+            }
           }
         }
         
@@ -698,7 +794,7 @@ ${args.additionalContext ? `## Additional Context\n${args.additionalContext}` : 
 
 ${worktreeInfo}
 
-${GITHUB_REPO ? `## GitHub Repository\n- Repository: ${GITHUB_REPO}\n- Ready for PR creation with \`github_create_pr\` tool` : '## GitHub Repository\n- ⚠️ No GitHub repository detected. Set GITHUB_REPO env variable if needed.'}
+${GITHUB_REPO ? `## GitHub Repository\n- Repository: ${GITHUB_REPO}\n- Ready for PR creation with \`github_create_pr\` tool\n- Requires: GitHub CLI (\`gh\`) installed and authenticated` : '## GitHub Repository\n- ⚠️ No GitHub repository detected\n- Install GitHub CLI: \`gh\` and run \`gh auth login\`\n- Or set GITHUB_REPO environment variable'}
 
 ## Next Steps
 1. Review the analysis above

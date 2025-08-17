@@ -244,7 +244,7 @@ export class FreeScoutAPI {
     const params = new URLSearchParams();
     if (query) params.append('query', query);
     if (status) params.append('status', status);
-    if (mailboxId) params.append('mailbox_id', mailboxId.toString());
+    if (mailboxId) params.append('mailboxId', mailboxId.toString());
 
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`

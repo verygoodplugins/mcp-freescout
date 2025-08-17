@@ -142,12 +142,16 @@ export class FreeScoutAPI {
   async searchConversations(
     query: string,
     status?: string,
-    state?: string
+    state?: string,
+    mailboxId?: number
   ): Promise<FreeScoutApiResponse<FreeScoutConversation>> {
     const params = new URLSearchParams();
     if (query) params.append('query', query);
     if (status) params.append('status', status);
     if (state) params.append('state', state);
+    if (typeof mailboxId !== 'undefined') {
+      params.append('mailboxId', mailboxId.toString());
+    }
 
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`
@@ -173,6 +177,10 @@ export class FreeScoutAPI {
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`
     );
+  }
+
+  async getMailboxes(): Promise<any> {
+    return this.request<any>('/mailboxes');
   }
 
   extractTicketIdFromUrl(url: string): string | null {

@@ -9,7 +9,7 @@ An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management 
 - 💬 **Draft Responses**: Generate customer replies based on ticket analysis
 - 🌳 **Git Integration**: Create and manage Git worktrees for ticket implementations
 - 🔄 **Full Workflow Support**: Complete ticket-to-PR workflow automation
-- 📊 **Search Capabilities**: Search and filter tickets across your FreeScout instance
+- 📊 **Search Capabilities**: Search and filter tickets across your FreeScout instance with mailbox filtering support
 
 ## Installation
 
@@ -274,6 +274,7 @@ Search for tickets across your FreeScout instance.
 **Parameters:**
 - `query` (required): Search query
 - `status` (optional): Filter by status ('active', 'pending', 'closed', 'spam', 'all')
+- `mailboxId` (optional): Filter by specific mailbox ID (searches all mailboxes if not specified)
 
 **Natural Language Examples:**
 - "Search for tickets containing 'OAuth error'"
@@ -281,6 +282,20 @@ Search for tickets across your FreeScout instance.
 - "Search for closed tickets about 'plugin conflicts'"
 - "Look for tickets from customer 'victor@example.com'"
 - "Find all active tickets related to 'authentication'"
+- "Search for tickets in mailbox 1 containing 'bug report'"
+- "Find tickets in mailbox 2 with status pending"
+
+#### `freescout_get_mailboxes`
+Get a list of all available mailboxes in your FreeScout instance.
+
+**Parameters:**
+None
+
+**Natural Language Examples:**
+- "Show me all available mailboxes"
+- "List the mailboxes in FreeScout"
+- "What mailboxes are configured?"
+- "Get mailbox information"
 
 ### Git Workflow Tools
 

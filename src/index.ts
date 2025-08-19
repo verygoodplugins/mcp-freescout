@@ -235,8 +235,21 @@ const tools: Tool[] = [
           enum: ['active', 'pending', 'closed', 'spam', 'all'],
           description: 'Filter by status (default: all)',
         },
+        mailboxId: {
+          type: 'number',
+          description: 'Filter by mailbox ID (optional, searches all mailboxes if not specified)',
+        },
       },
       required: ['query'],
+    },
+  },
+  {
+    name: 'freescout_get_mailboxes',
+    description: 'Get list of available mailboxes',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
     },
   },
   {
@@ -501,7 +514,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'freescout_search_tickets': {
         const results = await api.searchConversations(
           args.query as string,
-          args.status as string
+          args.status as string,
+          args.mailboxId as number
         );
         
         return {
@@ -509,6 +523,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'freescout_get_mailboxes': {
+        const mailboxes = await api.getMailboxes();
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(mailboxes, null, 2),
             },
           ],
         };

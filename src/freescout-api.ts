@@ -241,10 +241,29 @@ export class FreeScoutAPI {
     status?: string,
     mailboxId?: number
   ): Promise<FreeScoutApiResponse<FreeScoutConversation>> {
+    // Valid statuses as defined in the API
+    const VALID_STATUSES = ['active', 'pending', 'closed', 'spam'];
+    
     const params = new URLSearchParams();
     if (query) params.append('query', query);
-    if (status) params.append('status', status);
-    if (mailboxId) params.append('mailboxId', mailboxId.toString());
+    
+    // Handle mailboxId=0 correctly using typeof check
+    if (typeof mailboxId !== 'undefined') {
+      params.append('mailboxId', mailboxId.toString());
+    }
+    
+    // Handle status parameter
+    if (status) {
+      if (status === 'all') {
+        // When status is 'all', append each valid status explicitly
+        VALID_STATUSES.forEach(validStatus => {
+          params.append('status', validStatus);
+        });
+      } else {
+        // Only append single status when a specific status is provided
+        params.append('status', status);
+      }
+    }
 
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`

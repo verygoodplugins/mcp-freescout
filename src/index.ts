@@ -235,6 +235,11 @@ const tools: Tool[] = [
           enum: ['active', 'pending', 'closed', 'spam', 'all'],
           description: 'Filter by status (default: all)',
         },
+        state: {
+          type: 'string',
+          enum: ['published', 'deleted'],
+          description: 'Filter by state (default: published to exclude deleted tickets)',
+        },
       },
       required: ['query'],
     },
@@ -499,10 +504,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'freescout_search_tickets': {
-        const results = await api.searchConversations(
-          args.query as string,
-          args.status as string
-        );
+        // Always default to 'published' state unless user explicitly requests 'deleted'
+        const state = args.state as string || 'published';
+        const query = args.query as string;
+        
+        let results;
+        
+        // If searching for unassigned tickets, use the list endpoint which properly supports filtering
+        if (query.includes('assignee:null') || query.includes('unassigned')) {
+          results = await api.listConversations(
+            args.status as string,
+            state,
+            null // null assignee for unassigned tickets
+          );
+        } else {
+          // Use search for other queries
+          results = await api.searchConversations(
+            query,
+            args.status as string,
+            state
+          );
+          
+          // FreeScout API search doesn't respect state parameter, so filter client-side
+          if (state === 'published' && results._embedded?.conversations) {
+            results._embedded.conversations = results._embedded.conversations.filter(
+              (conversation: any) => conversation.state === 'published'
+            );
+            
+            // Update the total count to reflect filtered results
+            if (results.page) {
+              results.page.total_elements = results._embedded.conversations.length;
+            }
+          }
+        }
         
         return {
           content: [

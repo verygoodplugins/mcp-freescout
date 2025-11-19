@@ -525,10 +525,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             state
           );
           
-          // FreeScout API search doesn't respect state parameter, so filter client-side
+          /**
+           * LIMITATION: The FreeScout searchConversations API endpoint does not respect
+           * the 'state' parameter (published/draft). Unlike the list endpoint, which
+           * correctly filters by state, the search endpoint ignores this parameter and
+           * returns all conversations regardless of state.
+           * 
+           * WORKAROUND: We apply client-side filtering below when state='published'.
+           * 
+           * PERFORMANCE IMPLICATIONS:
+           * - Client-side filtering may be expensive for large result sets
+           * - Pagination counts may be inaccurate (total_elements reflects filtered count)
+           * - Results may be incomplete if the API returns paginated data
+           * 
+           * ACTION ITEM: Verify with FreeScout maintainers whether the searchConversations
+           * endpoint should accept the 'state' parameter or if API documentation only
+           * applies to the list endpoint. Consider filing an issue or feature request.
+           */
           if (state === 'published' && results._embedded?.conversations) {
+            const originalCount = results._embedded.conversations.length;
             results._embedded.conversations = results._embedded.conversations.filter(
               (conversation: any) => conversation.state === 'published'
+            );
+            const filteredCount = results._embedded.conversations.length;
+            
+            console.error(
+              `[WARNING] searchConversations endpoint does not respect 'state' parameter. ` +
+              `Applied client-side filtering for state='${state}'. ` +
+              `Original count: ${originalCount}, Filtered count: ${filteredCount}. ` +
+              `This may be expensive for large result sets and incomplete with pagination.`
             );
             
             // Update the total count to reflect filtered results

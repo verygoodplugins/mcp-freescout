@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { marked } from 'marked';
+import DOMPurify from 'isomorphic-dompurify';
 import type { 
   FreeScoutConversation, 
   FreeScoutApiResponse,
@@ -27,11 +28,9 @@ export class FreeScoutAPI {
     const html = marked.parse(text, {
       gfm: true,
       breaks: true,
-      headerIds: false,
-      mangle: false,
     }) as string;
 
-    return html.trim();
+    return DOMPurify.sanitize(html).trim();
   }
 
   private async request<T>(

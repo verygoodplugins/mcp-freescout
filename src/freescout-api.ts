@@ -1,6 +1,4 @@
 import fetch from 'node-fetch';
-import { marked } from 'marked';
-import DOMPurify from 'isomorphic-dompurify';
 import type { 
   FreeScoutConversation, 
   FreeScoutApiResponse,
@@ -17,35 +15,134 @@ export class FreeScoutAPI {
   }
 
   /**
-   * Convert Markdown formatting to HTML for FreeScout using a robust parser.
-   * 
-   * FreeScout Limitations:
-   * - Headings (h1-h6) are not supported and will be converted to bold text
-   * - Markdown links work as plain HTML <a> tags
-   * - Basic formatting (bold, italic, code, lists) is supported
-   * 
-   * This preserves underscores, code fences, and inline code reliably.
+   * Convert Markdown formatting to HTML for FreeScout
    */
   private markdownToHtml(text: string): string {
-    if (!text) {
-      return '';
-    }
-
-    // Custom renderer to handle FreeScout limitations
-    const renderer = new marked.Renderer();
+    // Convert bold text: **text** or __text__ -> <strong>text</strong>
+    let html = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>');
     
-    // Convert headings to bold paragraphs since FreeScout doesn't support h1-h6
-    renderer.heading = ({ text }) => {
-      return `<p><strong>${text}</strong></p>\n`;
-    };
-
-    const html = marked.parse(text, {
-      gfm: true,
-      breaks: true,
-      renderer: renderer,
-    }) as string;
-
-    return DOMPurify.sanitize(html).trim();
+    // Convert italic text: *text* or _text_ -> <em>text</em> (avoid conflicts with bold)
+    html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+    html = html.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>');
+    
+    // Convert code: `text` -> <code>text</code>
+    html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Process the entire text to handle lists that span paragraph breaks
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inOrderedList = false;
+    let inUnorderedList = false;
+    let currentParagraph = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      // Check for empty lines (paragraph breaks)
+      if (!trimmedLine) {
+        // Check if the next non-empty line is also a list item
+        const nextListItemIndex = lines.slice(i + 1).findIndex(nextLine => {
+          const nextTrimmed = nextLine.trim();
+          return nextTrimmed && (/^\d+\.\s+/.test(nextTrimmed) || /^[-*]\s+/.test(nextTrimmed));
+        });
+        
+        // If we're in a list and the next item is also a list item, continue the list
+        if ((inOrderedList || inUnorderedList) && nextListItemIndex !== -1) {
+          continue; // Skip this empty line but keep the list open
+        }
+        
+        // Close any current lists before starting new paragraph
+        if (inOrderedList) {
+          processedLines.push('</ol>');
+          inOrderedList = false;
+        }
+        if (inUnorderedList) {
+          processedLines.push('</ul>');
+          inUnorderedList = false;
+        }
+        
+        // Process accumulated paragraph
+        if (currentParagraph.length > 0) {
+          const paragraphContent = currentParagraph.join('<br>');
+          processedLines.push(`<p>${paragraphContent}</p>`);
+          currentParagraph = [];
+        }
+        
+        // Skip extra empty lines
+        continue;
+      }
+      
+      // Check for numbered list items
+      if (/^\d+\.\s+/.test(trimmedLine)) {
+        // Finish any current paragraph
+        if (currentParagraph.length > 0) {
+          const paragraphContent = currentParagraph.join('<br>');
+          processedLines.push(`<p>${paragraphContent}</p>`);
+          currentParagraph = [];
+        }
+        
+        if (!inOrderedList) {
+          if (inUnorderedList) {
+            processedLines.push('</ul>');
+            inUnorderedList = false;
+          }
+          processedLines.push('<ol>');
+          inOrderedList = true;
+        }
+        const content = trimmedLine.replace(/^\d+\.\s+/, '');
+        processedLines.push(`<li>${content}</li>`);
+      }
+      // Check for bullet list items
+      else if (/^[-*]\s+/.test(trimmedLine)) {
+        // Finish any current paragraph
+        if (currentParagraph.length > 0) {
+          const paragraphContent = currentParagraph.join('<br>');
+          processedLines.push(`<p>${paragraphContent}</p>`);
+          currentParagraph = [];
+        }
+        
+        if (!inUnorderedList) {
+          if (inOrderedList) {
+            processedLines.push('</ol>');
+            inOrderedList = false;
+          }
+          processedLines.push('<ul>');
+          inUnorderedList = true;
+        }
+        const content = trimmedLine.replace(/^[-*]\s+/, '');
+        processedLines.push(`<li>${content}</li>`);
+      }
+      // Regular line
+      else {
+        // Close any lists
+        if (inOrderedList) {
+          processedLines.push('</ol>');
+          inOrderedList = false;
+        }
+        if (inUnorderedList) {
+          processedLines.push('</ul>');
+          inUnorderedList = false;
+        }
+        
+        // Add to current paragraph
+        currentParagraph.push(trimmedLine);
+      }
+    }
+    
+    // Close any remaining lists
+    if (inOrderedList) processedLines.push('</ol>');
+    if (inUnorderedList) processedLines.push('</ul>');
+    
+    // Process any remaining paragraph
+    if (currentParagraph.length > 0) {
+      const paragraphContent = currentParagraph.join('<br>');
+      processedLines.push(`<p>${paragraphContent}</p>`);
+    }
+    
+    return processedLines.join('\n\n');
   }
 
   private async request<T>(
@@ -142,12 +239,35 @@ export class FreeScoutAPI {
   async searchConversations(
     query: string,
     status?: string,
-    state?: string
+    state?: string,
+    mailboxId?: number
   ): Promise<FreeScoutApiResponse<FreeScoutConversation>> {
+    // Valid statuses as defined in the API
+    const VALID_STATUSES = ['active', 'pending', 'closed', 'spam'];
+    
     const params = new URLSearchParams();
     if (query) params.append('query', query);
-    if (status) params.append('status', status);
+    
+    
+    // Handle state parameter
     if (state) params.append('state', state);
+    // Handle mailboxId=0 correctly using typeof check
+    if (typeof mailboxId !== 'undefined') {
+      params.append('mailboxId', mailboxId.toString());
+    }
+    
+    // Handle status parameter
+    if (status) {
+      if (status === 'all') {
+        // When status is 'all', append each valid status explicitly
+        VALID_STATUSES.forEach(validStatus => {
+          params.append('status', validStatus);
+        });
+      } else {
+        // Only append single status when a specific status is provided
+        params.append('status', status);
+      }
+    }
 
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`
@@ -173,6 +293,10 @@ export class FreeScoutAPI {
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`
     );
+  }
+
+  async getMailboxes(): Promise<any> {
+    return this.request<any>('/mailboxes');
   }
 
   extractTicketIdFromUrl(url: string): string | null {

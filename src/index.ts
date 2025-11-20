@@ -240,8 +240,21 @@ const tools: Tool[] = [
           enum: ['published', 'deleted'],
           description: 'Filter by state (default: published to exclude deleted tickets)',
         },
+        mailboxId: {
+          type: 'number',
+          description: 'Filter by mailbox ID (optional, searches all mailboxes if not specified)',
+        },
       },
       required: ['query'],
+    },
+  },
+  {
+    name: 'freescout_get_mailboxes',
+    description: 'Get list of available mailboxes',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
     },
   },
   {
@@ -522,7 +535,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           results = await api.searchConversations(
             query,
             args.status as string,
-            state
+            state,
+            args.mailboxId as number
           );
           
           /**
@@ -568,6 +582,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'freescout_get_mailboxes': {
+        const mailboxes = await api.getMailboxes();
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(mailboxes, null, 2),
             },
           ],
         };

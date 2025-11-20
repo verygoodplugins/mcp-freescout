@@ -251,8 +251,9 @@ export class FreeScoutAPI {
     
     // Handle state parameter
     if (state) params.append('state', state);
-    // Handle mailboxId=0 correctly using typeof check
-    if (typeof mailboxId !== 'undefined') {
+    
+    // Handle mailboxId (including 0) but not null/undefined
+    if (mailboxId != null) {  // Checks for both null and undefined
       params.append('mailboxId', mailboxId.toString());
     }
     

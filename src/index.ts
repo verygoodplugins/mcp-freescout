@@ -222,27 +222,27 @@ const tools: Tool[] = [
   },
   {
     name: 'freescout_search_tickets',
-    description: 'Search for FreeScout tickets',
+    description: 'Search for FreeScout tickets. For unassigned tickets use query "assignee:null". For assigned tickets search by text and filter by status. Status values: active (open tickets), pending, closed, spam. Default state is "published" (excludes deleted tickets).',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Search query',
+          description: 'Search query. Use "assignee:null" for unassigned tickets, or search ticket content/subject. Examples: "authentication error", "assignee:null", "OAuth timeout"',
         },
         status: {
           type: 'string',
           enum: ['active', 'pending', 'closed', 'spam', 'all'],
-          description: 'Filter by status (default: all)',
+          description: 'Filter by status. Use "active" for open/active tickets, "pending" for awaiting response, "closed" for resolved, "spam" for spam, "all" for any status (default: all)',
         },
         state: {
           type: 'string',
           enum: ['published', 'deleted'],
-          description: 'Filter by state (default: published to exclude deleted tickets)',
+          description: 'Filter by state. "published" = normal tickets (default), "deleted" = deleted/trashed tickets',
         },
         mailboxId: {
           type: 'number',
-          description: 'Filter by mailbox ID (optional, searches all mailboxes if not specified)',
+          description: 'Filter by specific mailbox ID. Omit to search all mailboxes. Use freescout_get_mailboxes to see available mailboxes.',
         },
       },
       required: ['query'],

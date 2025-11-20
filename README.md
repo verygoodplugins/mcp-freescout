@@ -285,6 +285,13 @@ Search for tickets across your FreeScout instance.
 - "Search for tickets in mailbox 1 containing 'bug report'"
 - "Find tickets in mailbox 2 with status pending"
 
+**Search Tips for AI Agents:**
+- For **unassigned tickets**: Use query `"assignee:null"` with status `"active"`
+- For **assigned tickets to a user**: Search by content and filter by assignee in results
+- **Status "active"** = open/active tickets (NOT "open" - that's invalid)
+- **Empty queries** may return inconsistent results - always use specific search terms
+- Use **freescout_get_mailboxes** first if filtering by mailbox
+
 #### `freescout_get_mailboxes`
 Get a list of all available mailboxes in your FreeScout instance.
 

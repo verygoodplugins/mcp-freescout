@@ -18,6 +18,12 @@ export class FreeScoutAPI {
 
   /**
    * Convert Markdown formatting to HTML for FreeScout using a robust parser.
+   * 
+   * FreeScout Limitations:
+   * - Headings (h1-h6) are not supported and will be converted to bold text
+   * - Markdown links work as plain HTML <a> tags
+   * - Basic formatting (bold, italic, code, lists) is supported
+   * 
    * This preserves underscores, code fences, and inline code reliably.
    */
   private markdownToHtml(text: string): string {
@@ -25,9 +31,18 @@ export class FreeScoutAPI {
       return '';
     }
 
+    // Custom renderer to handle FreeScout limitations
+    const renderer = new marked.Renderer();
+    
+    // Convert headings to bold paragraphs since FreeScout doesn't support h1-h6
+    renderer.heading = ({ text }) => {
+      return `<p><strong>${text}</strong></p>\n`;
+    };
+
     const html = marked.parse(text, {
       gfm: true,
       breaks: true,
+      renderer: renderer,
     }) as string;
 
     return DOMPurify.sanitize(html).trim();

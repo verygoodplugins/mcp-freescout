@@ -660,7 +660,7 @@ GPL-3.0 License - see LICENSE file for details
 
 For issues, questions, or suggestions:
 - [Open an issue on GitHub](https://github.com/verygoodplugins/mcp-freescout/issues)
-- [Contact the maintainers](https://verygoodplugins.com/contact)
+- [Contact the maintainers](https://verygoodplugins.com/contact?utm_source=github)
 - Check the documentation
 
 ## Roadmap

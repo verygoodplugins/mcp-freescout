@@ -4,8 +4,15 @@
   "description": "MCP server for FreeScout ticket management and workflow automation",
   "main": "dist/index.js",
   "type": "module",
+  "mcpName": "io.github.verygoodplugins/mcp-freescout",
   "bin": {
     "mcp-freescout": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",

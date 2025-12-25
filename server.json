@@ -1,0 +1,55 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.verygoodplugins/mcp-freescout",
+  "description": "MCP server for FreeScout helpdesk ticket management and workflow automation. Analyze tickets, manage responses, and integrate with Git workflows.",
+  "version": "1.4.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verygoodplugins/mcp-freescout"
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "identifier": "@verygoodplugins/mcp-freescout",
+      "version": "1.4.2"
+    }
+  ],
+  "tools": [
+    {
+      "name": "freescout_get_ticket",
+      "description": "Fetch a FreeScout ticket by ID or URL"
+    },
+    {
+      "name": "freescout_analyze_ticket",
+      "description": "Analyze ticket to determine issue type and solution"
+    },
+    {
+      "name": "freescout_search_tickets",
+      "description": "Search tickets by query and filters"
+    },
+    {
+      "name": "freescout_add_note",
+      "description": "Add internal note to ticket"
+    },
+    {
+      "name": "freescout_update_ticket",
+      "description": "Update ticket status and assignment"
+    },
+    {
+      "name": "freescout_create_draft_reply",
+      "description": "Create draft reply for review"
+    },
+    {
+      "name": "git_create_worktree",
+      "description": "Create Git worktree for ticket work"
+    },
+    {
+      "name": "github_create_pr",
+      "description": "Create GitHub PR for ticket branch"
+    }
+  ],
+  "author": {
+    "name": "Very Good Plugins",
+    "url": "https://verygoodplugins.com/?utm_source=mcp-registry"
+  }
+}

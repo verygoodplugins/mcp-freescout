@@ -41,6 +41,7 @@ src/
 The server exposes these tools:
 
 ### Ticket Management
+
 - **freescout_get_ticket** - Fetch ticket by ID or URL with threads
 - **freescout_analyze_ticket** - Analyze ticket to determine issue type and solution
 - **freescout_add_note** - Add internal note to ticket
@@ -50,11 +51,13 @@ The server exposes these tools:
 - **freescout_search_tickets** - Search tickets by query and filters
 
 ### Git Integration
+
 - **git_create_worktree** - Create Git worktree for ticket work
 - **git_remove_worktree** - Remove worktree after completion
 - **github_create_pr** - Create GitHub PR for ticket branch
 
 ### Workflow
+
 - **freescout_implement_ticket** - Full workflow: analyze, worktree, plan
 
 ## Environment Variables
@@ -79,12 +82,14 @@ GITHUB_TOKEN=ghp_xxxx
 ## Common Tasks
 
 **Add a new tool:**
+
 1. Define tool schema in `src/index.ts` tools array
 2. Add handler in `CallToolRequestSchema` switch
 3. Implement API method in `freescout-api.ts`
 4. Add types in `types.ts`
 
 **Test a specific tool:**
+
 ```bash
 echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"freescout_get_ticket","arguments":{"ticket":"12345"}},"id":1}' | npm start
 ```
@@ -92,6 +97,7 @@ echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"freescout_get_tic
 ## API Patterns
 
 The FreeScout API client uses:
+
 - Basic authentication with API key
 - JSON request/response format
 - Pagination for list endpoints

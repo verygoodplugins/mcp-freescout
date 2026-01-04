@@ -96,8 +96,13 @@ export class FreeScoutAPI {
    * Convert Markdown formatting to HTML for FreeScout
    */
   private markdownToHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
     // Convert bold text: **text** or __text__ -> <strong>text</strong>
-    let html = text
+    let html = escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/__(.*?)__/g, '<strong>$1</strong>');
 
@@ -223,6 +228,29 @@ export class FreeScoutAPI {
     return processedLines.join('\n\n');
   }
 
+  private looksLikeHtml(text: string): boolean {
+    // Heuristic: if it already contains common HTML tags, assume it's already formatted
+    return /<\/?(p|br|div|span|strong|em|ul|ol|li|code|pre|blockquote|h[1-6])\b/i.test(text);
+  }
+
+  private containsMarkdownSyntax(text: string): boolean {
+    return (
+      text.includes('\n') ||
+      /\*\*.+?\*\*/.test(text) ||
+      /__.+?__/.test(text) ||
+      /`[^`]+`/.test(text) ||
+      /^\s*#{1,6}\s+.+/m.test(text) ||
+      /^\s*[-*]\s+.+/m.test(text) ||
+      /^\s*\d+\.\s+.+/m.test(text)
+    );
+  }
+
+  private formatForFreeScoutEditor(text: string): string {
+    if (this.looksLikeHtml(text)) return text;
+    if (!this.containsMarkdownSyntax(text)) return text;
+    return this.markdownToHtml(text);
+  }
+
   private async request<T>(path: string, method: string = 'GET', body?: unknown): Promise<T> {
     return this.retryWithBackoff(async () => {
       const url = `${this.baseUrl}/api${path}`;
@@ -291,6 +319,7 @@ export class FreeScoutAPI {
     userId?: number,
     state?: 'draft' | 'published'
   ): Promise<FreeScoutThread> {
+    const formattedText = this.formatForFreeScoutEditor(text);
     const body: {
       type: 'note' | 'message' | 'customer';
       text: string;
@@ -298,7 +327,7 @@ export class FreeScoutAPI {
       state?: 'draft' | 'published';
     } = {
       type,
-      text,
+      text: formattedText,
     };
 
     if (userId) {
@@ -313,9 +342,7 @@ export class FreeScoutAPI {
   }
 
   async createDraftReply(ticketId: string, text: string, userId: number): Promise<FreeScoutThread> {
-    // Convert Markdown formatting to HTML for proper display in FreeScout
-    const htmlText = this.markdownToHtml(text);
-    return this.addThread(ticketId, 'message', htmlText, userId, 'draft');
+    return this.addThread(ticketId, 'message', text, userId, 'draft');
   }
 
   async updateConversation(
@@ -415,8 +442,7 @@ export class FreeScoutAPI {
     return this.searchConversations({
       textSearch: query,
       status:
-        statusValue &&
-        ['active', 'pending', 'closed', 'spam', 'all'].includes(statusValue)
+        statusValue && ['active', 'pending', 'closed', 'spam', 'all'].includes(statusValue)
           ? (statusValue as SearchFilters['status'])
           : undefined,
       state:

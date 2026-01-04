@@ -262,6 +262,27 @@ describe('FreeScoutAPI', () => {
         })
       );
     });
+
+    it('should convert markdown to HTML for notes', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 457,
+          type: 'note',
+          body: '<strong>bold</strong>',
+          created_by_customer: false,
+          created_at: '2024-01-01T00:00:00Z',
+        }),
+      });
+
+      await api.addThread('123', 'note', '**bold**\n\n- item', 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('<strong>bold</strong>');
+      expect(callBody).toContain('<ul>');
+      expect(callBody).toContain('<li>item</li>');
+    });
   });
 
   describe('Schema Validation', () => {

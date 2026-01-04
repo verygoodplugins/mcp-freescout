@@ -59,7 +59,7 @@ describe('FreeScoutAPI', () => {
           headers: expect.objectContaining({
             'X-FreeScout-API-Key': mockApiKey,
           }),
-        }),
+        })
       );
 
       // Validate against schema
@@ -69,13 +69,11 @@ describe('FreeScoutAPI', () => {
     });
 
     it('should retry on transient failures', async () => {
-      mockFetch
-        .mockRejectedValueOnce(new Error('ECONNRESET'))
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: async () => mockConversationResponse,
-        });
+      mockFetch.mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockConversationResponse,
+      });
 
       const result = await api.getConversation('123');
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -217,7 +215,7 @@ describe('FreeScoutAPI', () => {
         expect.objectContaining({
           method: 'PUT',
           body: expect.stringContaining('"status":"closed"'),
-        }),
+        })
       );
     });
 
@@ -254,7 +252,7 @@ describe('FreeScoutAPI', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"text":"Test note"'),
-        }),
+        })
       );
     });
   });
@@ -347,7 +345,7 @@ describe('FreeScoutAPI', () => {
         () =>
           new Promise((_, reject) => {
             setTimeout(() => reject(new Error('ETIMEDOUT')), 100);
-          }),
+          })
       );
 
       await expect(api.getConversation('123')).rejects.toThrow();

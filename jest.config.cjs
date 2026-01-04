@@ -45,4 +45,3 @@ module.exports = {
   maxWorkers: 1, // Run tests serially to avoid memory issues
   workerIdleMemoryLimit: '512MB', // Restart workers if they use too much memory
 };
-

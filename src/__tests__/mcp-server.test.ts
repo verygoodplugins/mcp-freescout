@@ -36,7 +36,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -63,7 +63,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -90,7 +90,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -124,7 +124,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       // Simulate tool execution
@@ -157,7 +157,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       await expect(tool.handler({ shouldFail: true })).rejects.toThrow('Tool execution failed');
@@ -202,7 +202,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -225,7 +225,7 @@ describe('MCP Server Tool Patterns', () => {
               z.object({
                 id: z.number(),
                 subject: z.string(),
-              }),
+              })
             ),
             totalCount: z.number(),
           },
@@ -239,7 +239,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -267,7 +267,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -294,7 +294,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       tool.disable();
@@ -323,7 +323,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       // Update the tool description
@@ -359,7 +359,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       const result = await tool.handler({ data: 'test' });
@@ -397,7 +397,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       const result = await tool.handler({ query: 'short' });
@@ -434,7 +434,7 @@ describe('MCP Server Tool Patterns', () => {
                 structuredContent: output,
               };
           }
-        },
+        }
       );
 
       await expect(tool.handler({ errorType: 'validation' })).rejects.toThrow(/Validation failed/);
@@ -463,7 +463,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -490,7 +490,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();
@@ -515,7 +515,7 @@ describe('MCP Server Tool Patterns', () => {
             content: [{ type: 'text', text: JSON.stringify(output) }],
             structuredContent: output,
           };
-        },
+        }
       );
 
       expect(tool).toBeDefined();

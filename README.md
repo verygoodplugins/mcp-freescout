@@ -576,12 +576,6 @@ For more control, you can specify additional environment variables:
 - Check for third-party limitations before attempting fixes
 - Verify reproducibility with team notes
 
-### Git Workflow
-
-- Use worktrees for parallel development
-- Clean up worktrees after PR creation
-- Keep branch names descriptive
-
 ### Customer Communication
 
 - Generate draft replies for review

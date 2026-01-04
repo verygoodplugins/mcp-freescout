@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import type {
   FreeScoutConversation,
   FreeScoutApiResponse,
@@ -65,13 +64,14 @@ export class FreeScoutAPI {
   private async retryWithBackoff<T>(fn: () => Promise<T>, retryCount = 0): Promise<T> {
     try {
       return await fn();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       const isRetryable =
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('ETIMEDOUT') ||
-        error.message?.includes('429') ||
-        error.message?.includes('503') ||
-        error.message?.includes('502');
+        message.includes('ECONNRESET') ||
+        message.includes('ETIMEDOUT') ||
+        message.includes('429') ||
+        message.includes('503') ||
+        message.includes('502');
 
       if (!isRetryable || retryCount >= this.retryOptions.maxRetries) {
         throw error;
@@ -84,7 +84,7 @@ export class FreeScoutAPI {
       );
 
       console.error(
-        `[FreeScout API] Retry ${retryCount + 1}/${this.retryOptions.maxRetries} after ${Math.round(delay)}ms. Error: ${error.message}`
+        `[FreeScout API] Retry ${retryCount + 1}/${this.retryOptions.maxRetries} after ${Math.round(delay)}ms. Error: ${message}`
       );
 
       await this.sleep(delay);
@@ -223,7 +223,7 @@ export class FreeScoutAPI {
     return processedLines.join('\n\n');
   }
 
-  private async request<T>(path: string, method: string = 'GET', body?: any): Promise<T> {
+  private async request<T>(path: string, method: string = 'GET', body?: unknown): Promise<T> {
     return this.retryWithBackoff(async () => {
       const url = `${this.baseUrl}/api${path}`;
 
@@ -264,10 +264,10 @@ export class FreeScoutAPI {
         }
 
         return response.json() as Promise<T>;
-      } catch (error: any) {
+      } catch (error: unknown) {
         clearTimeout(timeoutId);
 
-        if (error.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
           throw new Error(`FreeScout API timeout after ${this.retryOptions.timeout}ms`);
         }
 
@@ -291,7 +291,12 @@ export class FreeScoutAPI {
     userId?: number,
     state?: 'draft' | 'published'
   ): Promise<FreeScoutThread> {
-    const body: any = {
+    const body: {
+      type: 'note' | 'message' | 'customer';
+      text: string;
+      user?: number;
+      state?: 'draft' | 'published';
+    } = {
       type,
       text,
     };
@@ -404,10 +409,20 @@ export class FreeScoutAPI {
     state?: string,
     mailboxId?: number
   ): Promise<FreeScoutApiResponse<FreeScoutConversation>> {
+    const statusValue = status;
+    const stateValue = state;
+
     return this.searchConversations({
       textSearch: query,
-      status: status as any,
-      state: state as any,
+      status:
+        statusValue &&
+        ['active', 'pending', 'closed', 'spam', 'all'].includes(statusValue)
+          ? (statusValue as SearchFilters['status'])
+          : undefined,
+      state:
+        stateValue && ['published', 'deleted'].includes(stateValue)
+          ? (stateValue as SearchFilters['state'])
+          : undefined,
       mailboxId,
     });
   }
@@ -433,8 +448,8 @@ export class FreeScoutAPI {
     );
   }
 
-  async getMailboxes(): Promise<any> {
-    return this.request<any>('/mailboxes');
+  async getMailboxes(): Promise<unknown> {
+    return this.request<unknown>('/mailboxes');
   }
 
   extractTicketIdFromUrl(url: string): string | null {

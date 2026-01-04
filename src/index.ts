@@ -140,7 +140,11 @@ server.registerTool(
   async ({ ticket, status, assignTo }) => {
     const ticketId = api.parseTicketInput(ticket);
 
-    const updates: any = { byUser: DEFAULT_USER_ID };
+    const updates: {
+      status?: 'active' | 'pending' | 'closed' | 'spam';
+      assignTo?: number;
+      byUser?: number;
+    } = { byUser: DEFAULT_USER_ID };
     if (status) updates.status = status;
     if (assignTo) updates.assignTo = assignTo;
 

@@ -5,15 +5,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-  TextContentSchema,
-  ImageContentSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import { config } from 'dotenv';
 import { execSync } from 'child_process';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import type { TicketAnalysis, ImplementationPlan } from './types.js';
+import type { ImplementationPlan } from './types.js';
 
 // Load environment variables
 config();
@@ -35,7 +32,7 @@ function isGhAvailable(): boolean {
       timeout: 5000
     });
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -60,7 +57,7 @@ function getGitHubRepo(): string | undefined {
     
     const parsed = JSON.parse(repoInfo);
     return parsed.nameWithOwner;
-  } catch (error) {
+  } catch {
     // gh command failed - might not be in a GitHub repo or not authenticated
     return undefined;
   }
@@ -74,7 +71,7 @@ function isGitAvailable(): boolean {
       timeout: 5000
     });
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -407,7 +404,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const ticketId = api.parseTicketInput(args.ticket as string);
         const userId = args.userId || DEFAULT_USER_ID;
         
-        const thread = await api.addThread(
+        const _thread = await api.addThread(
           ticketId,
           'note',
           args.note as string,
@@ -439,8 +436,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           updates.assignTo = args.assignTo;
         }
         
-        const updated = await api.updateConversation(ticketId, updates);
-        
+        const _updated = await api.updateConversation(ticketId, updates);
+
         return {
           content: [
             {
@@ -880,7 +877,7 @@ ${args.additionalContext ? `## Additional Context\n${args.additionalContext}` : 
 
 ${worktreeInfo}
 
-${GITHUB_REPO ? `## GitHub Repository\n- Repository: ${GITHUB_REPO}\n- Ready for PR creation with \`github_create_pr\` tool\n- Requires: GitHub CLI (\`gh\`) installed and authenticated` : '## GitHub Repository\n- ⚠️ No GitHub repository detected\n- Install GitHub CLI: \`gh\` and run \`gh auth login\`\n- Or set GITHUB_REPO environment variable'}
+${GITHUB_REPO ? `## GitHub Repository\n- Repository: ${GITHUB_REPO}\n- Ready for PR creation with \`github_create_pr\` tool\n- Requires: GitHub CLI (\`gh\`) installed and authenticated` : '## GitHub Repository\n- ⚠️ No GitHub repository detected\n- Install GitHub CLI: `gh` and run `gh auth login`\n- Or set GITHUB_REPO environment variable'}
 
 ## Next Steps
 1. Review the analysis above

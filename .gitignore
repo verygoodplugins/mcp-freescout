@@ -43,8 +43,8 @@ tmp/
 temp/
 .tmp/
 
-# Package manager files
-package-lock.json
+# Package manager files (keep lock files for reproducible builds)
+# package-lock.json - REQUIRED for npm ci in CI/CD
 yarn.lock
 pnpm-lock.yaml
 .claude/settings.local.json

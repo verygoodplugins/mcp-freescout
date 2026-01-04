@@ -3,7 +3,9 @@ import { ConversationSchema, ThreadSchema, CustomerSchema } from '../types.js';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
-const globalWithFetch = globalThis as typeof globalThis & { fetch: typeof mockFetch };
+const globalWithFetch = globalThis as typeof globalThis & {
+  fetch: typeof mockFetch;
+};
 globalWithFetch.fetch = mockFetch;
 
 describe('FreeScoutAPI', () => {
@@ -79,11 +81,13 @@ describe('FreeScoutAPI', () => {
     });
 
     it('should retry on transient failures', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockConversationResponse,
-      });
+      mockFetch
+        .mockRejectedValueOnce(new Error('ECONNRESET'))
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => mockConversationResponse,
+        });
 
       const result = await api.getConversation('123');
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -190,7 +194,9 @@ describe('FreeScoutAPI', () => {
         }),
       });
 
-      const result = await api.searchConversations({ textSearch: 'nonexistent' });
+      const result = await api.searchConversations({
+        textSearch: 'nonexistent',
+      });
       expect(result._embedded?.conversations).toHaveLength(0);
     });
 
@@ -234,7 +240,9 @@ describe('FreeScoutAPI', () => {
         text: async () => 'Invalid status',
       });
 
-      await expect(api.updateConversation('123', { status: 'closed' })).rejects.toThrow();
+      await expect(
+        api.updateConversation('123', { status: 'closed' })
+      ).rejects.toThrow();
     });
   });
 
@@ -351,7 +359,9 @@ describe('FreeScoutAPI', () => {
 
     it('should parse various ticket input formats', () => {
       expect(api.parseTicketInput('123')).toBe('123');
-      expect(api.parseTicketInput('https://test.com/conversation/456')).toBe('456');
+      expect(api.parseTicketInput('https://test.com/conversation/456')).toBe(
+        '456'
+      );
     });
   });
 
@@ -386,7 +396,9 @@ describe('FreeScoutAPI', () => {
         });
       });
 
-      await expect(api.getConversation('123')).rejects.toThrow(/timeout after 10ms/);
+      await expect(api.getConversation('123')).rejects.toThrow(
+        /timeout after 10ms/
+      );
     });
   });
 

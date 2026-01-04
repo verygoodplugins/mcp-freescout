@@ -96,10 +96,7 @@ export class FreeScoutAPI {
    * Convert Markdown formatting to HTML for FreeScout
    */
   private markdownToHtml(text: string): string {
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // Convert bold text: **text** or __text__ -> <strong>text</strong>
     let html = escaped

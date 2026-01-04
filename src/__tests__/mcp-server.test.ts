@@ -57,7 +57,7 @@ describe('MCP Server Tool Patterns', () => {
             valid: z.boolean(),
           },
         },
-        async ({ num, email }) => {
+        async ({ num: _num, email: _email }) => {
           const output = { valid: true };
           return {
             content: [{ type: 'text', text: JSON.stringify(output) }],
@@ -427,12 +427,13 @@ describe('MCP Server Tool Patterns', () => {
               throw new Error('Network error: Failed to connect to FreeScout API');
             case 'notfound':
               throw new Error('Not found: Ticket #123 does not exist');
-            default:
+            default: {
               const output = { result: 'success' };
               return {
                 content: [{ type: 'text', text: JSON.stringify(output) }],
                 structuredContent: output,
               };
+            }
           }
         }
       );
@@ -509,7 +510,7 @@ describe('MCP Server Tool Patterns', () => {
             valid: z.boolean(),
           },
         },
-        async ({ email }) => {
+        async ({ email: _email }) => {
           const output = { valid: true };
           return {
             content: [{ type: 'text', text: JSON.stringify(output) }],

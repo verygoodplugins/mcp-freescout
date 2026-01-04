@@ -1,6 +1,6 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  preset: 'ts-jest/presets/default-esm',
+  preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
@@ -17,6 +17,9 @@ module.exports = {
         },
       },
     ],
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(node-fetch)/)', // Transform node-fetch ESM module

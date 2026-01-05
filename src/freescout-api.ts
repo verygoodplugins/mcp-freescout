@@ -35,7 +35,10 @@ export class FreeScoutAPI {
     const match = relative.match(/^(\d+)([dhm])$/);
     if (!match) return null;
 
-    const value = parseInt(match[1]);
+    const value = Number.parseInt(match[1], 10);
+    if (!Number.isFinite(value) || value <= 0 || value > 10000) {
+      return null;
+    }
     const unit = match[2];
     const now = new Date();
 
@@ -96,7 +99,7 @@ export class FreeScoutAPI {
    * Convert Markdown formatting to HTML for FreeScout
    */
   private markdownToHtml(text: string): string {
-    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escaped = this.escapeHtml(text);
 
     // Convert bold text: **text** or __text__ -> <strong>text</strong>
     let html = escaped
@@ -225,6 +228,10 @@ export class FreeScoutAPI {
     return processedLines.join('\n\n');
   }
 
+  private escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   private looksLikeHtml(text: string): boolean {
     // Heuristic: if it already contains common HTML tags, assume it's already formatted
     return /<\/?(p|br|div|span|strong|em|ul|ol|li|code|pre|blockquote|h[1-6])\b/i.test(text);
@@ -243,8 +250,9 @@ export class FreeScoutAPI {
   }
 
   private formatForFreeScoutEditor(text: string): string {
-    if (this.looksLikeHtml(text)) return text;
-    if (!this.containsMarkdownSyntax(text)) return text;
+    const escaped = this.escapeHtml(text);
+    if (this.looksLikeHtml(text)) return escaped;
+    if (!this.containsMarkdownSyntax(text)) return escaped;
     return this.markdownToHtml(text);
   }
 

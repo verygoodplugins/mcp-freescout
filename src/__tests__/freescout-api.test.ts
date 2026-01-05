@@ -291,6 +291,26 @@ describe('FreeScoutAPI', () => {
       expect(callBody).toContain('<ul>');
       expect(callBody).toContain('<li>item</li>');
     });
+
+    it('should escape raw HTML in notes', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 458,
+          type: 'note',
+          body: '&lt;p&gt;Hello&lt;/p&gt;',
+          created_by_customer: false,
+          created_at: '2024-01-01T00:00:00Z',
+        }),
+      });
+
+      await api.addThread('123', 'note', '<p>Hello</p>', 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('&lt;p&gt;Hello&lt;/p&gt;');
+      expect(callBody).not.toContain('<p>Hello</p>');
+    });
   });
 
   describe('Schema Validation', () => {

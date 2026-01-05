@@ -250,9 +250,8 @@ export class FreeScoutAPI {
   }
 
   private formatForFreeScoutEditor(text: string): string {
-    const escaped = this.escapeHtml(text);
-    if (this.looksLikeHtml(text)) return escaped;
-    if (!this.containsMarkdownSyntax(text)) return escaped;
+    if (this.looksLikeHtml(text)) return text;
+    if (!this.containsMarkdownSyntax(text)) return this.escapeHtml(text);
     return this.markdownToHtml(text);
   }
 

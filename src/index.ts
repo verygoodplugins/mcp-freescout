@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { config } from 'dotenv';
+import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
 import { ConversationSchema, TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
+import { loadEnv } from './env.js';
+
+type PackageJson = { version: string };
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json') as PackageJson;
 
 // Load environment variables
-config();
+loadEnv();
 
 // Validate required environment variables
 const FREESCOUT_URL = process.env.FREESCOUT_URL;
@@ -24,10 +29,21 @@ if (!FREESCOUT_URL || !FREESCOUT_API_KEY) {
 const api = new FreeScoutAPI(FREESCOUT_URL, FREESCOUT_API_KEY);
 const analyzer = new TicketAnalyzer();
 
+const allowedThreadTypes = new Set(['customer', 'message', 'note']);
+type ThreadType = 'customer' | 'message' | 'note';
+
+const isValidThreadType = (type: unknown): type is ThreadType =>
+  typeof type === 'string' && allowedThreadTypes.has(type as ThreadType);
+
+const hasCreatedAt = (createdAt: unknown): createdAt is string =>
+  typeof createdAt === 'string' && createdAt.length > 0;
+
+const normalizeThreadBody = (body: unknown) => (typeof body === 'string' ? body : '');
+
 // Create MCP server with new McpServer class
 const server = new McpServer({
   name: 'mcp-freescout',
-  version: '2.0.0',
+  version: packageJson.version,
 });
 
 // Tool 1: Get Ticket
@@ -253,8 +269,9 @@ server.registerTool(
     const analysis = analyzer.analyzeConversation(conversation);
 
     const threads = conversation._embedded?.threads || [];
-    const customerMessages = threads.filter((t) => t.type === 'customer');
-    const teamMessages = threads.filter((t) => t.type === 'message' || t.type === 'note');
+    const safeThreads = threads.filter((t) => isValidThreadType(t.type) && hasCreatedAt(t.created_at));
+    const customerMessages = safeThreads.filter((t) => t.type === 'customer');
+    const teamMessages = safeThreads.filter((t) => t.type === 'message' || t.type === 'note');
 
     const context = {
       ticketId,
@@ -267,15 +284,19 @@ server.registerTool(
       issueDescription: analysis.issueDescription,
       customerMessages: customerMessages.map((m) => ({
         date: m.created_at,
-        content:
-          analyzer.stripHtml(m.body).substring(0, 500) +
-          (analyzer.stripHtml(m.body).length > 500 ? '...' : ''),
+        content: (() => {
+          const body = normalizeThreadBody(m.body);
+          const stripped = analyzer.stripHtml(body);
+          return stripped.substring(0, 500) + (stripped.length > 500 ? '...' : '');
+        })(),
       })),
       teamMessages: teamMessages.slice(-3).map((m) => ({
         date: m.created_at,
-        content:
-          analyzer.stripHtml(m.body).substring(0, 300) +
-          (analyzer.stripHtml(m.body).length > 300 ? '...' : ''),
+        content: (() => {
+          const body = normalizeThreadBody(m.body);
+          const stripped = analyzer.stripHtml(body);
+          return stripped.substring(0, 300) + (stripped.length > 300 ? '...' : '');
+        })(),
       })),
       analysis: {
         isBug: analysis.isBug,
@@ -351,7 +372,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('FreeScout MCP Server v2.0.0 running...');
+  console.error(`FreeScout MCP Server v${packageJson.version} running...`);
 }
 
 main().catch((error) => {

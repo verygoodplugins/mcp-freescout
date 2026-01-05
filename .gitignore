@@ -49,3 +49,5 @@ yarn.lock
 pnpm-lock.yaml
 .claude/settings.local.json
 /.cursor
+.mcpregistry_github_token
+.mcpregistry_registry_token

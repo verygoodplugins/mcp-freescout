@@ -11,10 +11,10 @@ export const AttachmentSchema = z.object({
 
 export const ThreadSchema = z.object({
   id: z.number(),
-  type: z.enum(['customer', 'message', 'note']),
-  body: z.string(),
-  created_by_customer: z.boolean(),
-  created_at: z.string(),
+  type: z.enum(['customer', 'message', 'note']).optional(),
+  body: z.string().optional(),
+  created_by_customer: z.boolean().optional(),
+  created_at: z.string().optional(),
   attachments: z.array(AttachmentSchema).optional(),
 });
 

@@ -47,6 +47,8 @@ const server = new McpServer({
 });
 
 // Tool 1: Get Ticket
+// Note: outputSchema removed due to MCP SDK JSON Schema conversion issues
+// with undefined values. The raw API response may have missing fields.
 server.registerTool(
   'freescout_get_ticket',
   {
@@ -60,7 +62,6 @@ server.registerTool(
         .default(true)
         .describe('Include all conversation threads'),
     },
-    outputSchema: ConversationSchema,
   },
   async ({ ticket, includeThreads }) => {
     const ticketId = api.parseTicketInput(ticket);
@@ -68,7 +69,6 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(conversation, null, 2) }],
-      structuredContent: conversation,
     };
   }
 );

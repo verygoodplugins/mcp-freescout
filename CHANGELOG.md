@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-01-04
+## [2.0.0] - 2026-01-05
 
 ### Breaking Changes
 
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Markdown-to-HTML conversion**: Draft replies now automatically convert Markdown formatting (bold, italic, code, lists) to proper HTML for FreeScout display
 - **Zod schema validation** for all FreeScout API types with runtime validation
 - **Explicit search filters**:
   - `assignee`: 'unassigned' | 'any' | number
@@ -48,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Eliminated client-side filtering workarounds for search state parameter
 - Removed fragile string matching for special query syntax
 - Improved reliability with automatic retries for network errors
+- Windows compatibility: README config examples now use args array format to prevent path separator issues
+
+### Infrastructure
+
+- Added GitHub Actions CI/CD with automated testing and npm publishing
+- Added MCP Registry publishing for discoverability
+- ESLint 9 flat config with typescript-eslint 8
+- Security scanning with CodeQL and Dependabot
 
 ### Migration Guide
 

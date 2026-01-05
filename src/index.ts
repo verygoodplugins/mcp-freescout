@@ -292,14 +292,60 @@ server.registerTool(
   {
     title: 'Search FreeScout Tickets',
     description:
-      'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h".',
+      'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h". Use includeLastMessage: true to get a preview of the most recent message for each ticket.',
     inputSchema: SearchFiltersSchema,
   },
   async (filters) => {
     const results = await api.searchConversations(filters);
+    const conversations = results._embedded?.conversations || [];
+
+    // If includeLastMessage is true, fetch threads for each conversation
+    // and include a preview of the most recent message
+    let conversationsWithPreview = conversations;
+    if (filters.includeLastMessage && conversations.length > 0) {
+      conversationsWithPreview = await Promise.all(
+        conversations.map(async (conv) => {
+          try {
+            const fullConv = await api.getConversation(String(conv.id), true);
+            const threads = fullConv._embedded?.threads || [];
+
+            // Filter to actual messages (customer or message type, not notes)
+            const messages = threads
+              .filter((t) => t.type === 'customer' || t.type === 'message')
+              .filter((t) => hasCreatedAt(t.created_at));
+
+            // Sort by created_at descending and get the most recent
+            const sortedMessages = messages.sort((a, b) => {
+              const dateA = new Date(a.created_at || 0).getTime();
+              const dateB = new Date(b.created_at || 0).getTime();
+              return dateB - dateA;
+            });
+
+            const lastMessage = sortedMessages[0];
+            if (lastMessage) {
+              const body = normalizeThreadBody(lastMessage.body);
+              const stripped = analyzer.stripHtml(body);
+              const preview = stripped.substring(0, 300) + (stripped.length > 300 ? '...' : '');
+
+              return {
+                ...conv,
+                lastMessage: {
+                  type: lastMessage.type,
+                  date: lastMessage.created_at,
+                  preview,
+                },
+              };
+            }
+          } catch {
+            // If fetching threads fails, just return the conversation without preview
+          }
+          return conv;
+        })
+      );
+    }
 
     const output = {
-      conversations: results._embedded?.conversations || [],
+      conversations: conversationsWithPreview,
       totalCount: results.page?.total_elements || 0,
       page: results.page?.number,
       totalPages: results.page?.total_pages,

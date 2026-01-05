@@ -63,6 +63,28 @@ jobs:
       # Trusted Publishing: No NPM_TOKEN needed!
       - run: npm publish --access public --provenance
 
+  mcp-registry-publish:
+    needs: [release-please, npm-publish]
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher CLI
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Publish to MCP Registry
+        run: |
+          mcp-publisher login github-oidc
+          mcp-publisher publish
+        env:
+          MCP_REGISTRY_URL: https://registry.modelcontextprotocol.io
+
   announce:
     needs: [release-please, npm-publish]
     if: ${{ needs.release-please.outputs.release_created }}

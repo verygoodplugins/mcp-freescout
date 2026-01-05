@@ -1,55 +1,87 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.verygoodplugins/mcp-freescout",
-  "description": "MCP server for FreeScout helpdesk ticket management and workflow automation. Analyze tickets, manage responses, and integrate with Git workflows.",
-  "version": "1.4.2",
+  "title": "MCP FreeScout",
+  "description": "FreeScout ticket management with AI-powered analysis, search filters, and structured outputs.",
+  "version": "2.0.0",
+  "websiteUrl": "https://verygoodplugins.com/?utm_source=mcp-registry",
   "repository": {
-    "type": "git",
-    "url": "https://github.com/verygoodplugins/mcp-freescout"
+    "url": "https://github.com/verygoodplugins/mcp-freescout",
+    "source": "github"
   },
+  "license": "GPL-3.0",
+  "authors": [
+    {
+      "name": "Very Good Plugins",
+      "url": "https://verygoodplugins.com"
+    }
+  ],
   "packages": [
     {
-      "registry_type": "npm",
+      "registryType": "npm",
       "identifier": "@verygoodplugins/mcp-freescout",
-      "version": "1.4.2"
+      "version": "2.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FREESCOUT_URL",
+          "description": "Your FreeScout instance URL (e.g., https://support.example.com)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "FREESCOUT_API_KEY",
+          "description": "FreeScout API key with read/write permissions",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "FREESCOUT_DEFAULT_USER_ID",
+          "description": "Default user ID for ticket operations",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
     }
   ],
   "tools": [
     {
       "name": "freescout_get_ticket",
-      "description": "Fetch a FreeScout ticket by ID or URL"
+      "description": "Fetch a FreeScout ticket by ID or URL with full thread history"
     },
     {
       "name": "freescout_analyze_ticket",
-      "description": "Analyze ticket to determine issue type and solution"
+      "description": "Analyze ticket to determine issue type, root cause, and suggested solution"
     },
     {
       "name": "freescout_search_tickets",
-      "description": "Search tickets by query and filters"
+      "description": "Search tickets with explicit filters: assignee ('unassigned'|'any'|userId), status, updatedSince/createdSince (supports '7d', '24h'), pagination"
     },
     {
       "name": "freescout_add_note",
-      "description": "Add internal note to ticket"
+      "description": "Add internal note to a ticket"
     },
     {
       "name": "freescout_update_ticket",
-      "description": "Update ticket status and assignment"
+      "description": "Update ticket status and/or assignment"
     },
     {
       "name": "freescout_create_draft_reply",
-      "description": "Create draft reply for review"
+      "description": "Create a draft reply for human review before sending"
     },
     {
-      "name": "git_create_worktree",
-      "description": "Create Git worktree for ticket work"
+      "name": "freescout_get_ticket_context",
+      "description": "Get ticket context and customer info for personalized replies"
     },
     {
-      "name": "github_create_pr",
-      "description": "Create GitHub PR for ticket branch"
+      "name": "freescout_get_mailboxes",
+      "description": "List available FreeScout mailboxes"
     }
   ],
-  "author": {
-    "name": "Very Good Plugins",
-    "url": "https://verygoodplugins.com/?utm_source=mcp-registry"
-  }
+  "keywords": ["freescout", "helpdesk", "ticket-management", "customer-support", "automation"]
 }

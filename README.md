@@ -1,15 +1,34 @@
 # FreeScout MCP Server
 
-An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management and workflow automation. This server provides tools to interact with FreeScout tickets, analyze issues, manage responses, and integrate with Git workflows.
+An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management. This server provides tools to interact with FreeScout tickets, analyze issues, and manage customer responses.
 
 ## Features
 
 - 🎫 **Ticket Management**: Fetch, analyze, and update FreeScout tickets
 - 🔍 **Intelligent Analysis**: Automatically analyze tickets to determine issue type, root cause, and solutions
 - 💬 **Draft Responses**: Generate customer replies based on ticket analysis
-- 🌳 **Git Integration**: Create and manage Git worktrees for ticket implementations
-- 🔄 **Full Workflow Support**: Complete ticket-to-PR workflow automation
-- 📊 **Search Capabilities**: Search and filter tickets across your FreeScout instance with mailbox filtering support
+- 📊 **Advanced Search**: First-class filter parameters with relative time support ("7d", "24h")
+- 🔒 **Type Safety**: Full Zod schema validation with structured outputs
+- 🔁 **Reliability**: Automatic retry logic with exponential backoff for transient failures
+- ⚡ **Modern SDK**: Built on MCP SDK 1.25+ with `McpServer` and `registerTool()` patterns
+
+## What's New in v2.0
+
+**Breaking Changes:**
+
+- Search API redesigned with explicit filter parameters instead of query-string syntax
+- Migrated to modern `McpServer` class with structured outputs
+- Removed Git/GitHub tools (use dedicated Git MCP servers for workflow automation)
+
+**New Features:**
+
+- Explicit search filters: `assignee`, `updatedSince`, `createdSince`, `page`, `pageSize`
+- Relative time support: Use "7d", "24h", "30m" in date filters
+- Exponential backoff retry logic for network errors and rate limits
+- Structured content responses for better type safety
+- Full Zod schema validation throughout
+
+See [CHANGELOG.md](CHANGELOG.md) for migration guide.
 
 ## Installation
 
@@ -17,8 +36,6 @@ An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management 
 
 - Node.js 18 or higher
 - FreeScout instance with API access enabled
-- Git (for worktree management features)
-- GitHub CLI (`gh`) for GitHub integration (install from https://cli.github.com/)
 
 ## Quick Start (Recommended)
 
@@ -47,8 +64,9 @@ Add this to your Claude Desktop settings (`~/Library/Application Support/Claude/
 Add this to your Cursor MCP settings:
 
 **Method 1: Via Cursor Settings UI**
+
 1. Open Cursor Settings (Cmd/Ctrl + ,)
-2. Search for "MCP" 
+2. Search for "MCP"
 3. Click "Edit in settings.json"
 4. Add the MCP server configuration
 
@@ -64,8 +82,7 @@ Add this to your Cursor settings.json or create `~/.cursor/mcp.json`:
         "args": ["@verygoodplugins/mcp-freescout@latest"],
         "env": {
           "FREESCOUT_URL": "https://your-freescout-domain.com",
-          "FREESCOUT_API_KEY": "your-api-key-here",
-          "WORKING_DIRECTORY": "${workspaceFolder}"
+          "FREESCOUT_API_KEY": "your-api-key-here"
         }
       }
     }
@@ -80,17 +97,20 @@ That's it! The server will automatically use your current workspace directory fo
 If you prefer to install and run the server locally:
 
 1. Clone this repository:
+
 ```bash
 git clone https://github.com/verygoodplugins/mcp-freescout.git
 cd mcp-freescout
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Build the TypeScript code:
+
 ```bash
 npm run build
 ```
@@ -105,8 +125,7 @@ npm run build
       "args": ["/path/to/mcp-freescout/dist/index.js"],
       "env": {
         "FREESCOUT_URL": "https://your-freescout-domain.com",
-        "FREESCOUT_API_KEY": "your-api-key-here",
-        "WORKING_DIRECTORY": "/path/to/your/project"
+        "FREESCOUT_API_KEY": "your-api-key-here"
       }
     }
   }
@@ -132,13 +151,16 @@ npm run dev
 ### Core Ticket Operations
 
 #### `freescout_get_ticket`
+
 Fetch a FreeScout ticket with all its details and conversation threads.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `includeThreads` (optional): Include conversation threads (default: true)
 
 **Natural Language Examples:**
+
 - "Show me ticket #12345"
 - "Get the details for FreeScout ticket 34811"
 - "Fetch ticket https://support.example.com/conversation/12345"
@@ -146,6 +168,7 @@ Fetch a FreeScout ticket with all its details and conversation threads.
 - "Pull up the conversation for ticket #34811"
 
 **Example:**
+
 ```javascript
 {
   "ticket": "12345",
@@ -157,14 +180,16 @@ Fetch a FreeScout ticket with all its details and conversation threads.
 
 ![FreeScout ticket details and conversation threads displayed in Cursor chat interface](https://github.com/user-attachments/assets/0144056d-f6d6-4275-9f55-dade0be3ba8c)
 
-
 #### `freescout_analyze_ticket`
+
 Analyze a ticket to determine issue type, root cause, and suggested solutions.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 
 **Natural Language Examples:**
+
 - "Analyze ticket #12345"
 - "What kind of issue is ticket 34811?"
 - "Can you analyze this ticket and tell me if it's a bug?"
@@ -172,6 +197,7 @@ Analyze a ticket to determine issue type, root cause, and suggested solutions.
 - "Is this ticket a bug or feature request?"
 
 **Returns:**
+
 - Customer information
 - Issue description and classification
 - Code snippets and error messages
@@ -184,14 +210,17 @@ Analyze a ticket to determine issue type, root cause, and suggested solutions.
 ![Ticket analysis showing issue type, root cause, and implementation recommendations](https://github.com/user-attachments/assets/19080021-1f29-45a4-8601-556b55d379c3)
 
 #### `freescout_add_note`
+
 Add an internal note to a ticket for team communication.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `note` (required): The note content
 - `userId` (optional): User ID for the note (defaults to env setting)
 
 **Natural Language Examples:**
+
 - "Add a note to ticket #12345 saying 'Reproduced on staging'"
 - "Leave an internal note on this ticket"
 - "Add a team note: 'Customer confirmed fix works'"
@@ -199,14 +228,17 @@ Add an internal note to a ticket for team communication.
 - "Add internal documentation to this ticket"
 
 #### `freescout_update_ticket`
+
 Update ticket status and/or assignment.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `status` (optional): New status ('active', 'pending', 'closed', 'spam')
 - `assignTo` (optional): User ID to assign the ticket to
 
 **Natural Language Examples:**
+
 - "Close ticket #12345"
 - "Mark ticket 34811 as pending"
 - "Assign this ticket to user ID 2"
@@ -214,14 +246,17 @@ Update ticket status and/or assignment.
 - "Update ticket #12345 status to closed and assign to user 1"
 
 #### `freescout_create_draft_reply`
+
 Create a draft reply in FreeScout that can be edited before sending. This tool lets the LLM generate the reply content and saves it directly to FreeScout as a draft. **Automatically converts Markdown formatting to HTML** for proper display in FreeScout.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `replyText` (required): The draft reply content (generated by the LLM, supports Markdown formatting)
 - `userId` (optional): User ID creating the draft (defaults to env setting)
 
 **Natural Language Examples:**
+
 - "Create a draft reply for ticket #12345"
 - "Draft a customer response for this ticket"
 - "Generate and save a draft reply explaining the fix"
@@ -229,14 +264,16 @@ Create a draft reply in FreeScout that can be edited before sending. This tool l
 - "Create a draft reply thanking the customer and explaining the solution"
 
 **Markdown Support:**
+
 - **Bold text**: `**text**` or `__text__` → **text**
-- *Italic text*: `*text*` or `_text_` → *text*
+- _Italic text_: `*text*` or `_text_` → _text_
 - `Code`: `` `code` `` → `code`
 - Numbered lists: `1. item` → proper ordered lists
 - Bullet lists: `- item` or `* item` → proper unordered lists
 - Line breaks: Double newlines create paragraphs, single newlines create line breaks
 
 **Workflow:**
+
 1. Use `freescout_get_ticket_context` to get customer info and ticket details
 2. Let the LLM craft a personalized reply using Markdown formatting
 3. Use `freescout_create_draft_reply` to save the draft in FreeScout (Markdown automatically converted to HTML)
@@ -249,12 +286,15 @@ Create a draft reply in FreeScout that can be edited before sending. This tool l
 ![Draft reply automatically saved to FreeScout](https://github.com/user-attachments/assets/689bd675-cb34-414e-b18f-d50d4424ace6)
 
 #### `freescout_get_ticket_context`
+
 Get ticket context and customer information to help craft personalized replies.
 
 **Parameters:**
+
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 
 **Natural Language Examples:**
+
 - "Get context for ticket #12345 to write a reply"
 - "I need customer info and ticket details for drafting a response"
 - "Gather context for this ticket so I can write a personalized reply"
@@ -262,6 +302,7 @@ Get ticket context and customer information to help craft personalized replies.
 - "Get ticket context to help craft a customer response"
 
 **Returns:**
+
 - Customer name and email
 - Ticket subject and status
 - Issue description and analysis
@@ -269,14 +310,17 @@ Get ticket context and customer information to help craft personalized replies.
 - Analysis results (bug vs feature vs third-party issue)
 
 #### `freescout_search_tickets`
+
 Search for tickets across your FreeScout instance.
 
 **Parameters:**
+
 - `query` (required): Search query
 - `status` (optional): Filter by status ('active', 'pending', 'closed', 'spam', 'all')
 - `mailboxId` (optional): Filter by specific mailbox ID (searches all mailboxes if not specified)
 
 **Natural Language Examples:**
+
 - "Search for tickets containing 'OAuth error'"
 - "Find all pending tickets with 'HighLevel' in them"
 - "Search for closed tickets about 'plugin conflicts'"
@@ -285,185 +329,106 @@ Search for tickets across your FreeScout instance.
 - "Search for tickets in mailbox 1 containing 'bug report'"
 - "Find tickets in mailbox 2 with status pending"
 
+**Search Parameters (v2.0+):**
+
+- `textSearch` (optional): Plain text search in ticket content/subject
+- `assignee` (optional): 'unassigned' | 'any' | user_id (number)
+- `status` (optional): 'active' | 'pending' | 'closed' | 'spam' | 'all'
+- `state` (optional): 'published' | 'deleted'
+- `mailboxId` (optional): Filter by specific mailbox ID
+- `updatedSince` (optional): ISO date or relative time like "7d", "24h", "30m"
+- `createdSince` (optional): ISO date or relative time
+- `page` (optional): Page number for pagination (min: 1)
+- `pageSize` (optional): Results per page (min: 1, max: 100)
+
 **Search Tips for AI Agents:**
-- For **unassigned tickets**: Use query `"assignee:null"` with status `"active"`
-- For **assigned tickets to a user**: Search by content and filter by assignee in results
+
+- For **unassigned tickets**: Use `assignee: "unassigned"` with `status: "active"`
+- For **recent tickets**: Use `updatedSince: "7d"` for last 7 days
+- For **specific user**: Use `assignee: 123` (user ID number)
 - **Status "active"** = open/active tickets (NOT "open" - that's invalid)
-- **Empty queries** may return inconsistent results - always use specific search terms
 - Use **freescout_get_mailboxes** first if filtering by mailbox
+- Combine filters: `{ textSearch: "error", assignee: "unassigned", updatedSince: "24h" }`
 
 #### `freescout_get_mailboxes`
+
 Get a list of all available mailboxes in your FreeScout instance.
 
 **Parameters:**
 None
 
 **Natural Language Examples:**
+
 - "Show me all available mailboxes"
 - "List the mailboxes in FreeScout"
 - "What mailboxes are configured?"
 - "Get mailbox information"
 
-### Git Workflow Tools
-
-#### `git_create_worktree`
-Create a Git worktree for isolated ticket implementation.
-
-**Parameters:**
-- `ticketId` (required): Ticket ID for the worktree
-- `branchName` (optional): Custom branch name (default: fix/freescout-{ticketId})
-- `baseBranch` (optional): Base branch to create from (default: master)
-
-**Natural Language Examples:**
-- "Create a worktree for ticket #12345"
-- "Set up a Git worktree to work on this ticket"
-- "Create a new branch and worktree for ticket 34811"
-- "Make a worktree for fixing this issue"
-- "Set up isolated workspace for this ticket"
-
-#### `git_remove_worktree`
-Remove a Git worktree after work is complete.
-
-**Parameters:**
-- `ticketId` (required): Ticket ID of the worktree to remove
-
-**Natural Language Examples:**
-- "Remove the worktree for ticket #12345"
-- "Clean up the worktree for this ticket"
-- "Delete worktree for ticket 34811"
-- "Remove the Git worktree after finishing the implementation"
-- "Clean up workspace for this ticket"
-
-#### `github_create_pr`
-Create a GitHub pull request for the current branch. Automatically detects the repository from git remote.
-
-**Parameters:**
-- `title` (required): PR title
-- `body` (required): PR description/body
-- `ticketId` (optional): FreeScout ticket ID for reference (adds link to PR body)
-- `branch` (optional): Branch name (defaults to current branch)
-- `baseBranch` (optional): Base branch (default: master)
-- `draft` (optional): Create as draft PR (default: false)
-
-**Natural Language Examples:**
-- "Create a PR for this fix"
-- "Make a pull request with title 'Fix OAuth validation error'"
-- "Create a GitHub PR for ticket #12345"
-- "Submit a pull request for this feature"
-- "Create a draft PR for the current branch"
-
-**Features:**
-- Auto-detects GitHub repository using GitHub CLI (no configuration needed!)
-- Adds FreeScout ticket link to PR body when ticketId is provided
-- Supports draft PRs for work in progress
-- Uses GitHub CLI (`gh`) for authentication - no tokens required!
-- Requires: `gh` installed and authenticated (`gh auth login`)
-
-### Workflow Automation
-
-#### `freescout_implement_ticket`
-workflow automation: analyze ticket, create worktree, and prepare implementation plan.
-
-**Parameters:**
-- `ticket` (required): Ticket ID, number, or FreeScout URL
-- `additionalContext` (optional): Additional context or implementation suggestions
-- `autoCreateWorktree` (optional): Automatically create Git worktree (default: true)
-
-**Natural Language Examples:**
-- "Start the full implementation workflow for ticket #12345"
-- "Please implement a solution to this ticket"
-- "Analyze and prepare implementation for this ticket"
-- "Run the complete implementation workflow"
-- "Prepare this ticket for development with analysis and worktree setup"
-
-**Returns:**
-- Complete ticket analysis
-- Customer information
-- Issue classification (bug/feature/third-party)
-- Implementation plan
-- Git worktree details
-- Next steps guidance
-
 ## Workflow Examples
 
 ### Basic Ticket Analysis
+
 ```javascript
 // Analyze a ticket to understand the issue
 await mcp.callTool('freescout_analyze_ticket', {
-  ticket: '12345'
+  ticket: '12345',
 });
 ```
 
-### Complete Implementation Workflow
+### Complete Ticket Response Workflow
+
 ```javascript
-// 1. Start the implementation workflow
-const plan = await mcp.callTool('freescout_implement_ticket', {
-  ticket: 'https://support.example.com/conversation/12345',
-  additionalContext: 'Consider backward compatibility'
+// 1. Analyze the ticket to understand the issue
+const analysis = await mcp.callTool('freescout_analyze_ticket', {
+  ticket: '12345',
 });
 
-// 2. After implementing the fix, create a GitHub PR
-await mcp.callTool('github_create_pr', {
-  title: 'Fix: Validation error in checkout (FreeScout #12345)',
-  body: `## Summary
-Fixes the validation error reported in the checkout process.
-
-## Changes
-- Fixed validation logic in checkout.js
-- Added error handling for edge cases
-
-## Testing
-- Tested with various input combinations
-- All existing tests pass`,
-  ticketId: '12345'  // Automatically adds FreeScout link to PR
-});
-
-// 3. Get ticket context to craft a personalized reply
+// 2. Get ticket context for personalized reply
 const context = await mcp.callTool('freescout_get_ticket_context', {
-  ticket: '12345'
+  ticket: '12345',
 });
 
-// 4. Create a draft reply directly in FreeScout (LLM generates the content with Markdown)
+// 3. Create a draft reply directly in FreeScout
 await mcp.callTool('freescout_create_draft_reply', {
   ticket: '12345',
   replyText: `Hi ${context.customer.name},
 
-Thank you for working through that validation issue with us! Your detailed report was really helpful.
+Thank you for reaching out! Based on my analysis, I can see that ${analysis.issueDescription}.
 
-I've just implemented a fix that addresses the checkout validation error you experienced. The fix includes:
+Here's what I found:
 
-1. **Improved validation logic** in the checkout process
-2. **Better error handling** for edge cases  
-3. **Additional safeguards** to prevent similar issues
+1. **Issue Type**: ${analysis.isBug ? 'Bug' : 'Configuration/Feature Request'}
+2. **Root Cause**: ${analysis.rootCause || 'Under investigation'}
 
-The fix has been submitted for review and will be included in the next plugin update. You'll receive the update through WordPress's automatic update system.
-
-Thanks again for your patience and for helping us improve the plugin!
+I'll look into this and get back to you shortly with a solution.
 
 Best regards,
-[Your name]`
+[Your name]`,
 });
 
-// 5. Update ticket status and assignment  
+// 4. Update ticket status and assignment
 await mcp.callTool('freescout_update_ticket', {
   ticket: '12345',
   status: 'active',
-  assignTo: 1
+  assignTo: 1,
 });
 
-// 6. Clean up the worktree after PR is created
-await mcp.callTool('git_remove_worktree', {
-  ticketId: '12345'
+// 5. Add an internal note with findings
+await mcp.callTool('freescout_add_note', {
+  ticket: '12345',
+  note: `Analysis complete:
+- Is Bug: ${analysis.isBug}
+- Third-party Issue: ${analysis.isThirdPartyIssue}
+- Root Cause: ${analysis.rootCause}`,
 });
 ```
-![Complete implementation workflow](https://github.com/user-attachments/assets/dd003100-acfe-420b-b9a8-4253d07545d4)
-
 
 ### Draft Reply Workflow
+
 ```javascript
 // 1. Get ticket context for personalized reply
 const context = await mcp.callTool('freescout_get_ticket_context', {
-  ticket: '34811'
+  ticket: '34811',
 });
 
 // 2. Create draft reply in FreeScout (LLM crafts the content)
@@ -485,19 +450,20 @@ This should prevent the confusion you experienced and help other users avoid sim
 The update should be available within the next few weeks. Thanks for your patience and for helping us improve the plugin!
 
 Best regards,
-Jack`
+Jack`,
 });
 
 // The draft is now saved in FreeScout and can be reviewed/edited before sending
 ```
 
 ### Handling Non-Bug Issues
+
 ```javascript
 // For third-party issues or feature requests
 const reply = await mcp.callTool('freescout_draft_reply', {
   ticket: '12345',
   fixDescription: 'This is a limitation of the Elementor plugin that we cannot override.',
-  isExplanatory: true
+  isExplanatory: true,
 });
 ```
 
@@ -536,21 +502,25 @@ User Request → MCP Server → FreeScout API → Ticket Analyzer
 ## Development
 
 ### Running in Development Mode
+
 ```bash
 npm run dev
 ```
 
 ### Running Tests
+
 ```bash
 npm test
 ```
 
 ### Linting
+
 ```bash
 npm run lint
 ```
 
 ### Building for Production
+
 ```bash
 npm run build
 ```
@@ -559,22 +529,16 @@ npm run build
 
 ### Required Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `FREESCOUT_URL` | Your FreeScout instance URL | `https://support.example.com` |
-| `FREESCOUT_API_KEY` | FreeScout API key | `your-api-key-here` |
+| Variable            | Description                 | Example                       |
+| ------------------- | --------------------------- | ----------------------------- |
+| `FREESCOUT_URL`     | Your FreeScout instance URL | `https://support.example.com` |
+| `FREESCOUT_API_KEY` | FreeScout API key           | `your-api-key-here`           |
 
 ### Optional Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `FREESCOUT_DEFAULT_USER_ID` | Default user ID for assignments | `1` |
-| `WORKING_DIRECTORY` | Base directory for Git operations | Current working directory¹ |
-| `GITHUB_REPO` | GitHub repository (owner/repo) | Auto-detected using `gh`² |
-
-¹ **Note**: Automatically uses the current project/workspace directory. Only set this if you need to work on a different directory.
-
-² **Note**: The server automatically detects the GitHub repository using GitHub CLI (`gh`). Requires `gh` to be installed and authenticated (`gh auth login`). Only set `GITHUB_REPO` if you need to override the auto-detection.
+| Variable                    | Description                     | Default |
+| --------------------------- | ------------------------------- | ------- |
+| `FREESCOUT_DEFAULT_USER_ID` | Default user ID for assignments | `1`     |
 
 ### Advanced Configuration Example
 
@@ -588,9 +552,7 @@ For more control, you can specify additional environment variables:
       "env": {
         "FREESCOUT_URL": "https://support.example.com",
         "FREESCOUT_API_KEY": "your-api-key",
-        "FREESCOUT_DEFAULT_USER_ID": "2",
-        "WORKING_DIRECTORY": "/path/to/specific/project",
-        "GITHUB_REPO": "owner/repo"
+        "FREESCOUT_DEFAULT_USER_ID": "2"
       }
     }
   }
@@ -609,39 +571,83 @@ For more control, you can specify additional environment variables:
 ## Best Practices
 
 ### Ticket Analysis
+
 - Always analyze tickets before implementing fixes
 - Check for third-party limitations before attempting fixes
 - Verify reproducibility with team notes
 
-### Git Workflow
-- Use worktrees for parallel development
-- Clean up worktrees after PR creation
-- Keep branch names descriptive
-
 ### Customer Communication
+
 - Generate draft replies for review
 - Include fix descriptions in customer communications
 - Use explanatory replies for non-bug issues
+
+## Migration from v1.x to v2.0
+
+### Breaking Changes
+
+The `freescout_search_tickets` tool has been redesigned with explicit filter parameters. The old query-string syntax is no longer supported.
+
+**Before (v1.x):**
+
+```json
+{
+  "query": "assignee:null",
+  "status": "active"
+}
+```
+
+**After (v2.0):**
+
+```json
+{
+  "assignee": "unassigned",
+  "status": "active"
+}
+```
+
+**For text search:**
+
+```json
+{
+  "textSearch": "authentication error",
+  "assignee": "unassigned",
+  "updatedSince": "7d"
+}
+```
+
+### New Features to Adopt
+
+1. **Relative time filters**: Use `"7d"`, `"24h"`, `"30m"` instead of calculating ISO dates
+2. **Pagination**: Add `page` and `pageSize` parameters for large result sets
+3. **Structured outputs**: All tools now return typed `structuredContent` for better integration
+
+### Automatic Retries
+
+The server now automatically retries failed requests with exponential backoff. No configuration needed - it just works more reliably.
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### API Connection Errors
+
 - Verify your FreeScout URL includes the protocol (https://)
 - Check API key permissions in FreeScout
 - Ensure your FreeScout instance has API access enabled
-
-#### Git Worktree Errors
-- Ensure Git is installed and accessible
-- Verify the working directory is a Git repository (defaults to current directory)
-- Check that the base branch exists
-- If needed, explicitly set WORKING_DIRECTORY to your Git repository path
+- **New in v2.0**: The server will automatically retry transient connection errors
 
 #### Ticket Parsing Issues
+
 - The server accepts ticket IDs, numbers, and full URLs
 - URLs are automatically parsed to extract ticket IDs
 - Numeric inputs are treated as ticket IDs
+
+#### Rate Limiting (429 Errors)
+
+- **New in v2.0**: The server automatically detects rate limits and backs off
+- Retry logic includes exponential backoff with jitter
+- No manual intervention needed
 
 ## Contributing
 
@@ -659,6 +665,7 @@ GPL-3.0 License - see LICENSE file for details
 ## Support
 
 For issues, questions, or suggestions:
+
 - [Open an issue on GitHub](https://github.com/verygoodplugins/mcp-freescout/issues)
 - [Contact the maintainers](https://verygoodplugins.com/contact?utm_source=github)
 - Check the documentation

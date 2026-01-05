@@ -48,3 +48,4 @@ temp/
 yarn.lock
 pnpm-lock.yaml
 .claude/settings.local.json
+/.cursor

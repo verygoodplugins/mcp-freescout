@@ -1,36 +1,34 @@
-import type { 
-  FreeScoutConversation, 
-  FreeScoutThread,
-  TicketAnalysis 
-} from './types.js';
+import type { FreeScoutConversation, FreeScoutThread, TicketAnalysis } from './types.js';
 
 export class TicketAnalyzer {
   analyzeConversation(conversation: FreeScoutConversation): TicketAnalysis {
     const threads = conversation._embedded?.threads || [];
     const customer = conversation._embedded?.customer;
-    
-    const customerMessages = threads.filter(t => t.type === 'customer');
-    const teamNotes = threads.filter(t => t.type === 'note');
-    
+
+    const customerMessages = threads.filter((t) => t.type === 'customer');
+    const teamNotes = threads.filter((t) => t.type === 'note');
+
     // Extract issue description from customer messages
     const issueDescription = this.extractIssueDescription(customerMessages);
-    
+
     // Extract code snippets and error messages
     const codeSnippets = this.extractCodeSnippets(threads);
     const errorMessages = this.extractErrorMessages(threads);
-    
+
     // Check if tested by team
     const testedByTeam = this.checkTestedByTeam(teamNotes);
-    
+
     // Extract attachments
     const attachments = this.extractAttachments(threads);
-    
+
     // Analyze if it's a bug or third-party issue
     const analysis = this.analyzeIssueType(issueDescription, threads);
 
     return {
       ticketId: conversation.id.toString(),
-      customerName: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : 'Unknown',
+      customerName: customer
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+        : 'Unknown',
       customerEmail: customer?.email || 'unknown@example.com',
       issueDescription,
       hasAttachments: attachments.length > 0,
@@ -54,12 +52,12 @@ export class TicketAnalyzer {
     // Get the first customer message as the primary description
     const firstMessage = customerMessages[0];
     const description = this.stripHtml(firstMessage.body);
-    
+
     // Add any additional context from follow-up messages
     const additionalContext = customerMessages
       .slice(1)
-      .map(m => this.stripHtml(m.body))
-      .filter(text => text.length > 50) // Only include substantial messages
+      .map((m) => this.stripHtml(m.body))
+      .filter((text) => text.length > 50) // Only include substantial messages
       .join('\n\nAdditional context:\n');
 
     return additionalContext ? `${description}\n\n${additionalContext}` : description;
@@ -67,25 +65,26 @@ export class TicketAnalyzer {
 
   private extractCodeSnippets(threads: FreeScoutThread[]): string[] {
     const snippets: string[] = [];
-    
+
     for (const thread of threads) {
       const body = thread.body || '';
-      
+
       // Look for code blocks
       const codeBlockMatches = body.matchAll(/<pre[^>]*>.*?<\/pre>/gs);
       for (const match of codeBlockMatches) {
         snippets.push(this.stripHtml(match[0]));
       }
-      
+
       // Look for inline code
       const inlineCodeMatches = body.matchAll(/<code[^>]*>.*?<\/code>/gs);
       for (const match of inlineCodeMatches) {
         const code = this.stripHtml(match[0]);
-        if (code.length > 20) { // Only include substantial code snippets
+        if (code.length > 20) {
+          // Only include substantial code snippets
           snippets.push(code);
         }
       }
-      
+
       // Look for common code patterns in plain text
       const lines = this.stripHtml(thread.body).split('\n');
       for (const line of lines) {
@@ -94,7 +93,7 @@ export class TicketAnalyzer {
         }
       }
     }
-    
+
     return [...new Set(snippets)]; // Remove duplicates
   }
 
@@ -114,7 +113,7 @@ export class TicketAnalyzer {
 
     for (const thread of threads) {
       const text = this.stripHtml(thread.body);
-      
+
       for (const pattern of errorPatterns) {
         const matches = text.matchAll(pattern);
         for (const match of matches) {
@@ -143,7 +142,7 @@ export class TicketAnalyzer {
 
     for (const note of teamNotes) {
       const text = this.stripHtml(note.body).toLowerCase();
-      if (testKeywords.some(keyword => text.includes(keyword))) {
+      if (testKeywords.some((keyword) => text.includes(keyword))) {
         return true;
       }
     }
@@ -163,7 +162,7 @@ export class TicketAnalyzer {
 
     for (const thread of threads) {
       const text = this.stripHtml(thread.body).toLowerCase();
-      if (reproducibleKeywords.some(keyword => text.includes(keyword))) {
+      if (reproducibleKeywords.some((keyword) => text.includes(keyword))) {
         return true;
       }
     }
@@ -185,14 +184,20 @@ export class TicketAnalyzer {
     return attachments;
   }
 
-  private analyzeIssueType(description: string, threads: FreeScoutThread[]): {
+  private analyzeIssueType(
+    description: string,
+    threads: FreeScoutThread[]
+  ): {
     isBug: boolean;
     isThirdParty: boolean;
     rootCause?: string;
     suggestedSolution?: string;
   } {
-    const fullText = threads.map(t => this.stripHtml(t.body)).join('\n').toLowerCase();
-    
+    const fullText = threads
+      .map((t) => this.stripHtml(t.body))
+      .join('\n')
+      .toLowerCase();
+
     // Check for third-party issues
     const thirdPartyIndicators = [
       'elementor',
@@ -205,9 +210,7 @@ export class TicketAnalyzer {
       'wordpress core',
     ];
 
-    const isThirdParty = thirdPartyIndicators.some(indicator => 
-      fullText.includes(indicator)
-    );
+    const isThirdParty = thirdPartyIndicators.some((indicator) => fullText.includes(indicator));
 
     // Check if it's a feature request vs bug
     const featureKeywords = [
@@ -219,29 +222,23 @@ export class TicketAnalyzer {
       'would like to',
     ];
 
-    const isFeatureRequest = featureKeywords.some(keyword => 
-      fullText.includes(keyword)
-    );
+    const isFeatureRequest = featureKeywords.some((keyword) => fullText.includes(keyword));
 
     // Check for configuration issues
-    const configKeywords = [
-      'settings',
-      'configuration',
-      'not configured',
-      'setup',
-      'installation',
-    ];
+    const configKeywords = ['settings', 'configuration', 'not configured', 'setup', 'installation'];
 
-    const isConfigIssue = configKeywords.some(keyword => 
-      fullText.includes(keyword)
-    );
+    const isConfigIssue = configKeywords.some((keyword) => fullText.includes(keyword));
 
     return {
       isBug: !isFeatureRequest && !isConfigIssue && !isThirdParty,
       isThirdParty,
-      rootCause: isThirdParty ? 'Third-party plugin or system limitation' :
-                 isConfigIssue ? 'Configuration or setup issue' :
-                 isFeatureRequest ? 'Feature request, not a bug' : undefined,
+      rootCause: isThirdParty
+        ? 'Third-party plugin or system limitation'
+        : isConfigIssue
+          ? 'Configuration or setup issue'
+          : isFeatureRequest
+            ? 'Feature request, not a bug'
+            : undefined,
       suggestedSolution: undefined,
     };
   }
@@ -250,30 +247,30 @@ export class TicketAnalyzer {
     if (!html) {
       return '';
     }
-    
+
     return html
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
-      .replace(/&nbsp;/g, ' ')   // Replace &nbsp;
-      .replace(/&lt;/g, '<')     // Replace &lt;
-      .replace(/&gt;/g, '>')     // Replace &gt;
-      .replace(/&amp;/g, '&')    // Replace &amp;
-      .replace(/&quot;/g, '"')   // Replace &quot;
-      .replace(/&#39;/g, "'")    // Replace &#39;
-      .replace(/\s+/g, ' ')      // Normalize whitespace
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp;
+      .replace(/&lt;/g, '<') // Replace &lt;
+      .replace(/&gt;/g, '>') // Replace &gt;
+      .replace(/&amp;/g, '&') // Replace &amp;
+      .replace(/&quot;/g, '"') // Replace &quot;
+      .replace(/&#39;/g, "'") // Replace &#39;
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }
 
   private looksLikeCode(line: string): boolean {
     const codeIndicators = [
-      /^\s*\/\//,           // Comments
-      /^\s*#/,              // Comments or directives
-      /^\s*\*/,             // Comments
-      /function\s+\w+/,     // Function declarations
-      /class\s+\w+/,        // Class declarations
-      /\$\w+/,              // PHP variables
-      /\w+\s*\(\s*\)/,      // Function calls
-      /\w+\s*=\s*.+/,       // Assignments
-      /if\s*\(/,            // Control structures
+      /^\s*\/\//, // Comments
+      /^\s*#/, // Comments or directives
+      /^\s*\*/, // Comments
+      /function\s+\w+/, // Function declarations
+      /class\s+\w+/, // Class declarations
+      /\$\w+/, // PHP variables
+      /\w+\s*\(\s*\)/, // Function calls
+      /\w+\s*=\s*.+/, // Assignments
+      /if\s*\(/, // Control structures
       /for\s*\(/,
       /while\s*\(/,
       /return\s+/,
@@ -282,7 +279,7 @@ export class TicketAnalyzer {
       /include\s*\(/,
     ];
 
-    return codeIndicators.some(pattern => pattern.test(line));
+    return codeIndicators.some((pattern) => pattern.test(line));
   }
 
   generateCustomerReply(

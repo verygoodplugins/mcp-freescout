@@ -388,10 +388,7 @@ export class FreeScoutAPI {
     // Status filter
     if (filters.status) {
       if (filters.status === 'all') {
-        // When status is 'all', append each valid status explicitly
-        ['active', 'pending', 'closed', 'spam'].forEach((status) => {
-          params.append('status', status);
-        });
+        params.append('status', 'active,pending,closed,spam');
       } else {
         params.append('status', filters.status);
       }

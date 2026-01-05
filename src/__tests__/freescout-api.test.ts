@@ -200,6 +200,19 @@ describe('FreeScoutAPI', () => {
       expect(result._embedded?.conversations).toHaveLength(0);
     });
 
+    it('should use comma-separated values for status all', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ status: 'all' });
+
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('status=active%2Cpending%2Cclosed%2Cspam');
+    });
+
     it('should respect pagination parameters', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

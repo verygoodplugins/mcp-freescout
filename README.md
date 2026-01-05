@@ -49,7 +49,8 @@ Add this to your Claude Desktop settings (`~/Library/Application Support/Claude/
 {
   "mcpServers": {
     "freescout": {
-      "command": "npx @verygoodplugins/mcp-freescout@latest",
+      "command": "npx",
+      "args": ["@verygoodplugins/mcp-freescout@latest"],
       "env": {
         "FREESCOUT_URL": "https://your-freescout-domain.com",
         "FREESCOUT_API_KEY": "your-api-key-here"
@@ -548,7 +549,8 @@ For more control, you can specify additional environment variables:
 {
   "mcpServers": {
     "freescout": {
-      "command": "npx @verygoodplugins/mcp-freescout@latest",
+      "command": "npx",
+      "args": ["@verygoodplugins/mcp-freescout@latest"],
       "env": {
         "FREESCOUT_URL": "https://support.example.com",
         "FREESCOUT_API_KEY": "your-api-key",

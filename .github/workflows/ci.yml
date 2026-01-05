@@ -26,8 +26,14 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
+      - name: Unit tests
         run: npm test
+
+      - name: Integration tests
+        env:
+          FREESCOUT_URL: ${{ secrets.FREESCOUT_URL }}
+          FREESCOUT_API_KEY: ${{ secrets.FREESCOUT_API_KEY }}
+        run: npm run test:integration
 
       - name: Test coverage
         run: npm run test:coverage

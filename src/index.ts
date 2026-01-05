@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { ConversationSchema, TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
+import { TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -226,6 +226,7 @@ server.registerTool(
 );
 
 // Tool 6: Get Ticket Context
+// Note: outputSchema removed - returns processed API data with optional fields
 server.registerTool(
   'freescout_get_ticket_context',
   {
@@ -233,34 +234,6 @@ server.registerTool(
     description: 'Get ticket context and customer info to help draft personalized replies',
     inputSchema: {
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
-    },
-    outputSchema: {
-      ticketId: z.string(),
-      customer: z.object({
-        name: z.string(),
-        email: z.string(),
-      }),
-      subject: z.string(),
-      status: z.string(),
-      issueDescription: z.string(),
-      customerMessages: z.array(
-        z.object({
-          date: z.string(),
-          content: z.string(),
-        })
-      ),
-      teamMessages: z.array(
-        z.object({
-          date: z.string(),
-          content: z.string(),
-        })
-      ),
-      analysis: z.object({
-        isBug: z.boolean(),
-        isThirdPartyIssue: z.boolean(),
-        testedByTeam: z.boolean(),
-        rootCause: z.string().optional(),
-      }),
     },
   },
   async ({ ticket }) => {
@@ -308,12 +281,12 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(context, null, 2) }],
-      structuredContent: context,
     };
   }
 );
 
 // Tool 7: Search Tickets
+// Note: outputSchema removed - returns raw API search results with optional fields
 server.registerTool(
   'freescout_search_tickets',
   {
@@ -321,12 +294,6 @@ server.registerTool(
     description:
       'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h".',
     inputSchema: SearchFiltersSchema,
-    outputSchema: {
-      conversations: z.array(ConversationSchema),
-      totalCount: z.number(),
-      page: z.number().optional(),
-      totalPages: z.number().optional(),
-    },
   },
   async (filters) => {
     const results = await api.searchConversations(filters);
@@ -340,30 +307,24 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-      structuredContent: output,
     };
   }
 );
 
 // Tool 8: Get Mailboxes
+// Note: outputSchema removed - returns raw API data
 server.registerTool(
   'freescout_get_mailboxes',
   {
     title: 'Get Mailboxes',
     description: 'Get list of available mailboxes',
     inputSchema: {},
-    outputSchema: {
-      mailboxes: z.array(z.any()),
-    },
   },
   async () => {
     const mailboxes = await api.getMailboxes();
 
-    const output = { mailboxes };
-
     return {
-      content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-      structuredContent: output,
+      content: [{ type: 'text', text: JSON.stringify(mailboxes, null, 2) }],
     };
   }
 );

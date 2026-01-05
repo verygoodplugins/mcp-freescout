@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { config } from 'dotenv';
+import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
 import { ConversationSchema, TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
+import { loadEnv } from './env.js';
+
+type PackageJson = { version: string };
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json') as PackageJson;
 
 // Load environment variables
-config();
+loadEnv();
 
 // Validate required environment variables
 const FREESCOUT_URL = process.env.FREESCOUT_URL;
@@ -27,7 +32,7 @@ const analyzer = new TicketAnalyzer();
 // Create MCP server with new McpServer class
 const server = new McpServer({
   name: 'mcp-freescout',
-  version: '2.0.0',
+  version: packageJson.version,
 });
 
 // Tool 1: Get Ticket
@@ -351,7 +356,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('FreeScout MCP Server v2.0.0 running...');
+  console.error(`FreeScout MCP Server v${packageJson.version} running...`);
 }
 
 main().catch((error) => {

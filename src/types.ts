@@ -11,10 +11,10 @@ export const AttachmentSchema = z.object({
 
 export const ThreadSchema = z.object({
   id: z.number(),
-  type: z.enum(['customer', 'message', 'note']),
-  body: z.string(),
-  created_by_customer: z.boolean(),
-  created_at: z.string(),
+  type: z.string(),
+  body: z.string().nullable().optional(),
+  created_by_customer: z.boolean().optional(),
+  created_at: z.string().optional(),
   attachments: z.array(AttachmentSchema).optional(),
 });
 
@@ -33,11 +33,11 @@ export const ConversationSchema = z.object({
   subject: z.string(),
   status: z.enum(['active', 'pending', 'closed', 'spam']),
   state: z.enum(['published', 'deleted']).optional(),
-  user_id: z.number().nullable(),
-  customer_id: z.number(),
-  mailbox_id: z.number(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  user_id: z.number().nullable().optional(),
+  customer_id: z.number().optional(),
+  mailbox_id: z.number().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
   _embedded: z
     .object({
       threads: z.array(ThreadSchema).optional(),

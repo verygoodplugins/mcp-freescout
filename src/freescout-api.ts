@@ -393,9 +393,12 @@ export class FreeScoutAPI {
       }
     }
 
-    // State filter
+    // State filter - default to 'published' when status is set to exclude deleted tickets
     if (filters.state) {
       params.append('state', filters.state);
+    } else if (filters.status) {
+      // When searching by status but no explicit state, exclude deleted tickets
+      params.append('state', 'published');
     }
 
     // Mailbox filter

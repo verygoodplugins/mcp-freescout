@@ -253,9 +253,9 @@ export class TicketAnalyzer {
       .replace(/&nbsp;/g, ' ') // Replace &nbsp;
       .replace(/&lt;/g, '<') // Replace &lt;
       .replace(/&gt;/g, '>') // Replace &gt;
-      .replace(/&amp;/g, '&') // Replace &amp;
       .replace(/&quot;/g, '"') // Replace &quot;
       .replace(/&#39;/g, "'") // Replace &#39;
+      .replace(/&amp;/g, '&') // Replace &amp; (decode ampersand last to avoid double-unescaping)
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }

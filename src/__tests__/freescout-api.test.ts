@@ -213,6 +213,47 @@ describe('FreeScoutAPI', () => {
       expect(url).toContain('status=active%2Cpending%2Cclosed%2Cspam');
     });
 
+    it('should default state to published when status is set', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ status: 'active' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('state')).toBe('published');
+    });
+
+    it('should not override explicit state filter', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ status: 'active', state: 'deleted' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('state')).toBe('deleted');
+    });
+
+    it('should not add state when no status filter is set', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ textSearch: 'test' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('state')).toBeNull();
+    });
+
     it('should respect pagination parameters', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

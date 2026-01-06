@@ -93,6 +93,7 @@ export const SearchFiltersSchema = z.object({
   state: z.enum(['published', 'deleted']).optional(),
   page: z.number().min(1).optional(),
   pageSize: z.number().min(1).max(100).optional(),
+  includeLastMessage: z.boolean().optional(), // Include the most recent message for each ticket
 });
 
 // TypeScript types inferred from Zod schemas

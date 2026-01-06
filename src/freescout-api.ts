@@ -99,7 +99,27 @@ export class FreeScoutAPI {
    * Convert Markdown formatting to HTML for FreeScout
    */
   private markdownToHtml(text: string): string {
-    const escaped = this.escapeHtml(text);
+    // Step 1: Extract and protect fenced code blocks FIRST (before any other processing)
+    // Use markers that won't be matched by bold/italic patterns and survive HTML escaping
+    const fencedCodeBlocks: string[] = [];
+    let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, _lang, code) => {
+      const index = fencedCodeBlocks.length;
+      const escapedCode = this.escapeHtml(code.trim());
+      fencedCodeBlocks.push(`<pre><code>${escapedCode}</code></pre>`);
+      return `[[[FENCED${index}]]]`;
+    });
+
+    // Step 2: Extract and protect inline code (before italic/bold conversion)
+    const inlineCodeBlocks: string[] = [];
+    processed = processed.replace(/`([^`]+)`/g, (_, code) => {
+      const index = inlineCodeBlocks.length;
+      const escapedCode = this.escapeHtml(code);
+      inlineCodeBlocks.push(`<code>${escapedCode}</code>`);
+      return `[[[INLINE${index}]]]`;
+    });
+
+    // Step 3: Now escape HTML and process formatting on remaining text
+    const escaped = this.escapeHtml(processed);
 
     // Convert bold text: **text** or __text__ -> <strong>text</strong>
     let html = escaped
@@ -109,9 +129,6 @@ export class FreeScoutAPI {
     // Convert italic text: *text* or _text_ -> <em>text</em> (avoid conflicts with bold)
     html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
     html = html.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>');
-
-    // Convert code: `text` -> <code>text</code>
-    html = html.replace(/`(.*?)`/g, '<code>$1</code>');
 
     // Process the entire text to handle lists that span paragraph breaks
     const lines = html.split('\n');
@@ -225,7 +242,13 @@ export class FreeScoutAPI {
       processedLines.push(`<p>${paragraphContent}</p>`);
     }
 
-    return processedLines.join('\n\n');
+    let result = processedLines.join('\n\n');
+
+    // Step 4: Restore protected code blocks
+    result = result.replace(/\[\[\[FENCED(\d+)]]]/g, (_, idx) => fencedCodeBlocks[parseInt(idx)]);
+    result = result.replace(/\[\[\[INLINE(\d+)]]]/g, (_, idx) => inlineCodeBlocks[parseInt(idx)]);
+
+    return result;
   }
 
   private escapeHtml(text: string): string {
@@ -243,6 +266,7 @@ export class FreeScoutAPI {
       /\*\*.+?\*\*/.test(text) ||
       /__.+?__/.test(text) ||
       /`[^`]+`/.test(text) ||
+      /```[\s\S]*?```/.test(text) || // fenced code blocks
       /^\s*#{1,6}\s+.+/m.test(text) ||
       /^\s*[-*]\s+.+/m.test(text) ||
       /^\s*\d+\.\s+.+/m.test(text)
@@ -393,9 +417,12 @@ export class FreeScoutAPI {
       }
     }
 
-    // State filter
+    // State filter - default to 'published' when status is set to exclude deleted tickets
     if (filters.state) {
       params.append('state', filters.state);
+    } else if (filters.status) {
+      // When searching by status but no explicit state, exclude deleted tickets
+      params.append('state', 'published');
     }
 
     // Mailbox filter

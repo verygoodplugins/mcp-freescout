@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { ConversationSchema, TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
+import { TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -226,6 +226,7 @@ server.registerTool(
 );
 
 // Tool 6: Get Ticket Context
+// Note: outputSchema removed - returns processed API data with optional fields
 server.registerTool(
   'freescout_get_ticket_context',
   {
@@ -233,34 +234,6 @@ server.registerTool(
     description: 'Get ticket context and customer info to help draft personalized replies',
     inputSchema: {
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
-    },
-    outputSchema: {
-      ticketId: z.string(),
-      customer: z.object({
-        name: z.string(),
-        email: z.string(),
-      }),
-      subject: z.string(),
-      status: z.string(),
-      issueDescription: z.string(),
-      customerMessages: z.array(
-        z.object({
-          date: z.string(),
-          content: z.string(),
-        })
-      ),
-      teamMessages: z.array(
-        z.object({
-          date: z.string(),
-          content: z.string(),
-        })
-      ),
-      analysis: z.object({
-        isBug: z.boolean(),
-        isThirdPartyIssue: z.boolean(),
-        testedByTeam: z.boolean(),
-        rootCause: z.string().optional(),
-      }),
     },
   },
   async ({ ticket }) => {
@@ -308,31 +281,71 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(context, null, 2) }],
-      structuredContent: context,
     };
   }
 );
 
 // Tool 7: Search Tickets
+// Note: outputSchema removed - returns raw API search results with optional fields
 server.registerTool(
   'freescout_search_tickets',
   {
     title: 'Search FreeScout Tickets',
     description:
-      'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h".',
+      'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h". Use includeLastMessage: true to get a preview of the most recent message for each ticket.',
     inputSchema: SearchFiltersSchema,
-    outputSchema: {
-      conversations: z.array(ConversationSchema),
-      totalCount: z.number(),
-      page: z.number().optional(),
-      totalPages: z.number().optional(),
-    },
   },
   async (filters) => {
     const results = await api.searchConversations(filters);
+    const conversations = results._embedded?.conversations || [];
+
+    // If includeLastMessage is true, fetch threads for each conversation
+    // and include a preview of the most recent message
+    let conversationsWithPreview = conversations;
+    if (filters.includeLastMessage && conversations.length > 0) {
+      conversationsWithPreview = await Promise.all(
+        conversations.map(async (conv) => {
+          try {
+            const fullConv = await api.getConversation(String(conv.id), true);
+            const threads = fullConv._embedded?.threads || [];
+
+            // Filter to actual messages (customer or message type, not notes)
+            const messages = threads
+              .filter((t) => t.type === 'customer' || t.type === 'message')
+              .filter((t) => hasCreatedAt(t.created_at));
+
+            // Sort by created_at descending and get the most recent
+            const sortedMessages = messages.sort((a, b) => {
+              const dateA = new Date(a.created_at || 0).getTime();
+              const dateB = new Date(b.created_at || 0).getTime();
+              return dateB - dateA;
+            });
+
+            const lastMessage = sortedMessages[0];
+            if (lastMessage) {
+              const body = normalizeThreadBody(lastMessage.body);
+              const stripped = analyzer.stripHtml(body);
+              const preview = stripped.substring(0, 300) + (stripped.length > 300 ? '...' : '');
+
+              return {
+                ...conv,
+                lastMessage: {
+                  type: lastMessage.type,
+                  date: lastMessage.created_at,
+                  preview,
+                },
+              };
+            }
+          } catch {
+            // If fetching threads fails, just return the conversation without preview
+          }
+          return conv;
+        })
+      );
+    }
 
     const output = {
-      conversations: results._embedded?.conversations || [],
+      conversations: conversationsWithPreview,
       totalCount: results.page?.total_elements || 0,
       page: results.page?.number,
       totalPages: results.page?.total_pages,
@@ -340,30 +353,24 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-      structuredContent: output,
     };
   }
 );
 
 // Tool 8: Get Mailboxes
+// Note: outputSchema removed - returns raw API data
 server.registerTool(
   'freescout_get_mailboxes',
   {
     title: 'Get Mailboxes',
     description: 'Get list of available mailboxes',
     inputSchema: {},
-    outputSchema: {
-      mailboxes: z.array(z.any()),
-    },
   },
   async () => {
     const mailboxes = await api.getMailboxes();
 
-    const output = { mailboxes };
-
     return {
-      content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-      structuredContent: output,
+      content: [{ type: 'text', text: JSON.stringify(mailboxes, null, 2) }],
     };
   }
 );

@@ -12,10 +12,16 @@ describe('loadEnv', () => {
     const stdoutWrites: string[] = [];
     const stdoutSpy = jest
       .spyOn(process.stdout, 'write')
-      .mockImplementation((chunk: any, ..._args: any[]) => {
-        stdoutWrites.push(typeof chunk === 'string' ? chunk : chunk?.toString?.() ?? String(chunk));
-        return true;
-      });
+      .mockImplementation(
+        (chunk: string | Buffer | Uint8Array, ..._args: unknown[]) => {
+          stdoutWrites.push(
+            typeof chunk === 'string'
+              ? chunk
+              : (chunk?.toString?.() ?? String(chunk))
+          );
+          return true;
+        }
+      );
 
     process.chdir(tempDir);
     const { loadEnv } = await import('../env.js');

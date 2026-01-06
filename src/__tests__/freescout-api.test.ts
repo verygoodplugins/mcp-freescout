@@ -213,6 +213,47 @@ describe('FreeScoutAPI', () => {
       expect(url).toContain('status=active%2Cpending%2Cclosed%2Cspam');
     });
 
+    it('should default state to published when status is set', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ status: 'active' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('state')).toBe('published');
+    });
+
+    it('should not override explicit state filter', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ status: 'active', state: 'deleted' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('state')).toBe('deleted');
+    });
+
+    it('should not add state when no status filter is set', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ textSearch: 'test' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('state')).toBeNull();
+    });
+
     it('should respect pagination parameters', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -435,17 +476,19 @@ describe('FreeScoutAPI', () => {
   });
 
   describe('Markdown to HTML Conversion', () => {
+    const mockThreadResponse = {
+      id: 1,
+      type: 'note',
+      body: '',
+      created_by_customer: false,
+      created_at: '2024-01-01T00:00:00Z',
+    };
+
     it('should handle basic markdown formatting', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 201,
-        json: async () => ({
-          id: 1,
-          type: 'note',
-          body: '<strong>bold</strong>',
-          created_by_customer: false,
-          created_at: '2024-01-01T00:00:00Z',
-        }),
+        json: async () => mockThreadResponse,
       });
 
       await api.createDraftReply('123', '**bold**', 1);
@@ -453,6 +496,68 @@ describe('FreeScoutAPI', () => {
       const callBody = mockFetch.mock.calls[0][1]?.body as string;
       expect(callBody).toContain('<strong>bold</strong>');
       expect(callBody).toBeDefined();
+    });
+
+    it('should preserve underscores in inline code', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => mockThreadResponse,
+      });
+
+      await api.addThread('123', 'note', 'Use `wpf_ecommerce_hubspot_deal_properties` filter', 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('<code>wpf_ecommerce_hubspot_deal_properties</code>');
+      expect(callBody).not.toContain('<em>ecommerce</em>');
+    });
+
+    it('should handle fenced code blocks with language', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => mockThreadResponse,
+      });
+
+      const markdown = '```php\nadd_filter("hook", function($val) {\n  return $val;\n});\n```';
+      await api.addThread('123', 'note', markdown, 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('<pre><code>');
+      expect(callBody).toContain('add_filter');
+      expect(callBody).not.toContain('<em>');
+    });
+
+    it('should not italicize underscores in fenced code blocks', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => mockThreadResponse,
+      });
+
+      const markdown = '```\n$my_var = get_user_meta($user_id);\n```';
+      await api.addThread('123', 'note', markdown, 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('my_var');
+      expect(callBody).toContain('get_user_meta');
+      expect(callBody).toContain('user_id');
+      expect(callBody).not.toContain('<em>');
+    });
+
+    it('should handle mixed inline code and text with underscores', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => mockThreadResponse,
+      });
+
+      const markdown = 'Use `some_function` and _italicized text_ here';
+      await api.addThread('123', 'note', markdown, 1);
+
+      const callBody = mockFetch.mock.calls[0][1]?.body as string;
+      expect(callBody).toContain('<code>some_function</code>');
+      expect(callBody).toContain('<em>italicized text</em>');
     });
   });
 });

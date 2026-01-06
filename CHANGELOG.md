@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1](https://github.com/verygoodplugins/mcp-freescout/compare/v2.0.0...v2.0.1) (2026-01-06)
+
+
+### Bug Fixes
+
+* Add env loader and improve schema flexibility ([29e8837](https://github.com/verygoodplugins/mcp-freescout/commit/29e8837714433e3b60b878b9e7a7a106a751f44d))
+* Add env loader and improve schema flexibility ([31bc42d](https://github.com/verygoodplugins/mcp-freescout/commit/31bc42dbf9fe37003cea5c82e4a054b69b84ff14))
+* remove outputSchema from freescout_get_ticket to fix validation errors ([#17](https://github.com/verygoodplugins/mcp-freescout/issues/17)) ([571b987](https://github.com/verygoodplugins/mcp-freescout/commit/571b987899dfb2816ff3eeaffc2ac0d852224433))
+* validation errors + feat: includeLastMessage for search ([#18](https://github.com/verygoodplugins/mcp-freescout/issues/18)) ([dd884fa](https://github.com/verygoodplugins/mcp-freescout/commit/dd884fadf9d5ad24f28037e3eeff9613dfbccd4e))
+
 ## [2.0.0] - 2026-01-05
 
 ### Breaking Changes

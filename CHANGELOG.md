@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1](https://github.com/verygoodplugins/mcp-freescout/compare/v2.1.0...v2.1.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **release:** use npm trusted publishing without token auth ([#45](https://github.com/verygoodplugins/mcp-freescout/issues/45)) ([ce0ae11](https://github.com/verygoodplugins/mcp-freescout/commit/ce0ae11c8b944a37fb335d3be57163e716ff7b2e))
+
 ## [2.1.0](https://github.com/verygoodplugins/mcp-freescout/compare/v2.0.1...v2.1.0) (2026-04-23)
 
 

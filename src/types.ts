@@ -15,6 +15,9 @@ export const ThreadSchema = z.object({
   body: z.string().optional(),
   created_by_customer: z.boolean().optional(),
   created_at: z.string().optional(),
+  to: z.array(z.string()).optional(),
+  cc: z.array(z.string()).optional(),
+  bcc: z.array(z.string()).optional(),
   attachments: z.array(AttachmentSchema).optional(),
 });
 
@@ -38,6 +41,9 @@ export const ConversationSchema = z.object({
   mailbox_id: z.number().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
+  to: z.array(z.string()).optional(),
+  cc: z.array(z.string()).optional(),
+  bcc: z.array(z.string()).optional(),
   _embedded: z
     .object({
       threads: z.array(ThreadSchema).optional(),
@@ -104,6 +110,11 @@ export type FreeScoutConversation = z.infer<typeof ConversationSchema>;
 export type FreeScoutApiResponse<T = unknown> = z.infer<typeof ApiResponseSchema> & { data?: T };
 export type TicketAnalysis = z.infer<typeof TicketAnalysisSchema>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
+export interface FreeScoutRecipients {
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+}
 
 // Legacy interfaces (deprecated, use Zod schemas above)
 export interface FreeScoutPage {

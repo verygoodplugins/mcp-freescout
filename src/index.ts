@@ -3,9 +3,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
+import {
+  resolveDraftReplyRecipients,
+  shouldInheritDraftRecipients,
+} from './draft-recipients.js';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { TicketAnalysisSchema, SearchFiltersSchema } from './types.js';
+import { TicketAnalysisSchema, SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -192,6 +196,18 @@ server.registerTool(
         .number()
         .optional()
         .describe('User ID creating the draft (defaults to env setting)'),
+      to: z
+        .array(z.string().email())
+        .optional()
+        .describe('Optional TO recipients. Omit to preserve existing recipients; pass [] to clear.'),
+      cc: z
+        .array(z.string().email())
+        .optional()
+        .describe('Optional CC recipients. Omit to preserve existing recipients; pass [] to clear.'),
+      bcc: z
+        .array(z.string().email())
+        .optional()
+        .describe('Optional BCC recipients. Omit to preserve existing recipients; pass [] to clear.'),
     },
     outputSchema: {
       success: z.boolean(),
@@ -200,11 +216,32 @@ server.registerTool(
       draftId: z.number(),
     },
   },
-  async ({ ticket, replyText, userId }) => {
+  async ({ ticket, replyText, userId, to, cc, bcc }) => {
     const ticketId = api.parseTicketInput(ticket);
     const actualUserId = userId ?? DEFAULT_USER_ID;
+    const requestedRecipients: FreeScoutRecipients = { to, cc, bcc };
 
-    const draftThread = await api.createDraftReply(ticketId, replyText, actualUserId);
+    let inheritedRecipients: FreeScoutRecipients = {};
+    if (shouldInheritDraftRecipients(requestedRecipients)) {
+      const conversation = await api.getConversation(ticketId, false);
+      inheritedRecipients = {
+        to: conversation.to,
+        cc: conversation.cc,
+        bcc: conversation.bcc,
+      };
+    }
+
+    const resolvedRecipients = resolveDraftReplyRecipients(
+      requestedRecipients,
+      inheritedRecipients
+    );
+
+    const draftThread = await api.createDraftReply(
+      ticketId,
+      replyText,
+      actualUserId,
+      resolvedRecipients
+    );
 
     const output = {
       success: true,

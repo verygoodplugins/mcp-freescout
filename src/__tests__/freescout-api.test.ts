@@ -325,6 +325,32 @@ describe('FreeScoutAPI', () => {
       );
     });
 
+    it('should include recipient fields when provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          id: 459,
+          type: 'message',
+          body: 'Test reply',
+          created_by_customer: false,
+          created_at: '2024-01-01T00:00:00Z',
+        }),
+      });
+
+      await api.createDraftReply('123', 'Test reply', 1, {
+        to: ['customer@example.com'],
+        cc: ['team@example.com'],
+        bcc: ['audit@example.com'],
+      });
+
+      const callBody = JSON.parse((mockFetch.mock.calls[0][1]?.body as string) || '{}');
+      expect(callBody.to).toEqual(['customer@example.com']);
+      expect(callBody.cc).toEqual(['team@example.com']);
+      expect(callBody.bcc).toEqual(['audit@example.com']);
+      expect(callBody.state).toBe('draft');
+    });
+
     it('should convert markdown to HTML for notes', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -491,10 +517,13 @@ describe('FreeScoutAPI', () => {
         json: async () => mockThreadResponse,
       });
 
-      await api.createDraftReply('123', '**bold**', 1);
+      await api.createDraftReply('123', '**bold**', 1, {
+        cc: ['team@example.com'],
+      });
 
       const callBody = mockFetch.mock.calls[0][1]?.body as string;
       expect(callBody).toContain('<strong>bold</strong>');
+      expect(callBody).toContain('"cc":["team@example.com"]');
       expect(callBody).toBeDefined();
     });
 

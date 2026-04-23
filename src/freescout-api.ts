@@ -1,6 +1,7 @@
 import type {
   FreeScoutConversation,
   FreeScoutApiResponse,
+  FreeScoutRecipients,
   FreeScoutThread,
   SearchFilters,
 } from './types.js';
@@ -345,7 +346,8 @@ export class FreeScoutAPI {
     type: 'note' | 'message' | 'customer',
     text: string,
     userId?: number,
-    state?: 'draft' | 'published'
+    state?: 'draft' | 'published',
+    recipients?: FreeScoutRecipients
   ): Promise<FreeScoutThread> {
     const formattedText = this.formatForFreeScoutEditor(text);
     const body: {
@@ -353,6 +355,9 @@ export class FreeScoutAPI {
       text: string;
       user?: number;
       state?: 'draft' | 'published';
+      to?: string[];
+      cc?: string[];
+      bcc?: string[];
     } = {
       type,
       text: formattedText,
@@ -366,11 +371,28 @@ export class FreeScoutAPI {
       body.state = state;
     }
 
+    if (recipients?.to !== undefined) {
+      body.to = recipients.to;
+    }
+
+    if (recipients?.cc !== undefined) {
+      body.cc = recipients.cc;
+    }
+
+    if (recipients?.bcc !== undefined) {
+      body.bcc = recipients.bcc;
+    }
+
     return this.request<FreeScoutThread>(`/conversations/${ticketId}/threads`, 'POST', body);
   }
 
-  async createDraftReply(ticketId: string, text: string, userId: number): Promise<FreeScoutThread> {
-    return this.addThread(ticketId, 'message', text, userId, 'draft');
+  async createDraftReply(
+    ticketId: string,
+    text: string,
+    userId: number,
+    recipients?: FreeScoutRecipients
+  ): Promise<FreeScoutThread> {
+    return this.addThread(ticketId, 'message', text, userId, 'draft', recipients);
   }
 
   async updateConversation(

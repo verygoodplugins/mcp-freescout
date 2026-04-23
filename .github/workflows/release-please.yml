@@ -53,18 +53,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - run: npm ci
       - run: npm run build
       - run: npm test
 
-      # Trusted Publishing via OIDC - no NPM_TOKEN needed
-      - run: |
-          echo "//registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN}" > ~/.npmrc
-          npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted Publishing via OIDC - no npm token secret required
+      - run: npm publish --access public --provenance
 
   mcp-registry-publish:
     needs: [release-please, npm-publish]

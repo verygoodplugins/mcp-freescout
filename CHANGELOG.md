@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/verygoodplugins/mcp-freescout/compare/v2.0.1...v2.1.0) (2026-04-23)
+
+
+### Features
+
+* support recipients in draft replies ([#43](https://github.com/verygoodplugins/mcp-freescout/issues/43)) ([55d54d7](https://github.com/verygoodplugins/mcp-freescout/commit/55d54d766034b738c66b99f77de363d0f448bcd0))
+
+
+### Bug Fixes
+
+* **ci:** make dependabot auto-approve non-fatal ([#42](https://github.com/verygoodplugins/mcp-freescout/issues/42)) ([7e931ca](https://github.com/verygoodplugins/mcp-freescout/commit/7e931cadfc22d9c2b4319f574242c2141221e6c6))
+* make integration tests non-blocking in CI ([#20](https://github.com/verygoodplugins/mcp-freescout/issues/20)) ([8367fd3](https://github.com/verygoodplugins/mcp-freescout/commit/8367fd35e66c95f1b2fbaba473542ecf1831c1cd))
+* use NPM_TOKEN for npm publish authentication ([#21](https://github.com/verygoodplugins/mcp-freescout/issues/21)) ([299fa03](https://github.com/verygoodplugins/mcp-freescout/commit/299fa03555cd4d6428e3f84f7db41565e22d2f58))
+
 ## [Unreleased]
 
 ### Added

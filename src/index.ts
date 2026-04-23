@@ -220,15 +220,21 @@ server.registerTool(
     const ticketId = api.parseTicketInput(ticket);
     const actualUserId = userId ?? DEFAULT_USER_ID;
     const requestedRecipients: FreeScoutRecipients = { to, cc, bcc };
+    let recipientWarning: string | null = null;
 
     let inheritedRecipients: FreeScoutRecipients = {};
     if (shouldInheritDraftRecipients(requestedRecipients)) {
-      const conversation = await api.getConversation(ticketId, false);
-      inheritedRecipients = {
-        to: conversation.to,
-        cc: conversation.cc,
-        bcc: conversation.bcc,
-      };
+      try {
+        const conversation = await api.getConversation(ticketId, false);
+        inheritedRecipients = {
+          to: conversation.to,
+          cc: conversation.cc,
+          bcc: conversation.bcc,
+        };
+      } catch {
+        recipientWarning =
+          'Unable to load existing recipients, so FreeScout default recipients were used for omitted fields.';
+      }
     }
 
     const resolvedRecipients = resolveDraftReplyRecipients(
@@ -254,7 +260,7 @@ server.registerTool(
       content: [
         {
           type: 'text',
-          text: `✅ ${output.message}\n\nDraft ID: ${draftThread.id}\n\nThe draft reply is now saved in FreeScout and can be reviewed, edited, and sent from the FreeScout interface.`,
+          text: `✅ ${output.message}\n\nDraft ID: ${draftThread.id}\n\nThe draft reply is now saved in FreeScout and can be reviewed, edited, and sent from the FreeScout interface.${recipientWarning ? `\n\nWarning: ${recipientWarning}` : ''}`,
         },
       ],
       structuredContent: output,

@@ -521,10 +521,9 @@ describe('FreeScoutAPI', () => {
         cc: ['team@example.com'],
       });
 
-      const callBody = mockFetch.mock.calls[0][1]?.body as string;
-      expect(callBody).toContain('<strong>bold</strong>');
-      expect(callBody).toContain('"cc":["team@example.com"]');
-      expect(callBody).toBeDefined();
+      const callBody = JSON.parse((mockFetch.mock.calls[0][1]?.body as string) || '{}');
+      expect(callBody.text).toContain('<strong>bold</strong>');
+      expect(callBody.cc).toEqual(['team@example.com']);
     });
 
     it('should preserve underscores in inline code', async () => {

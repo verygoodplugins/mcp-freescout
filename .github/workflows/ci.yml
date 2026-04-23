@@ -8,15 +8,14 @@ on:
 
 jobs:
   test:
-    name: TypeScript CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -35,7 +34,7 @@ jobs:
           FREESCOUT_URL: ${{ secrets.FREESCOUT_URL }}
           FREESCOUT_API_KEY: ${{ secrets.FREESCOUT_API_KEY }}
         run: npm run test:integration
-        continue-on-error: true  # Cloudflare may block GitHub Actions IPs
+        continue-on-error: true # Cloudflare may block GitHub Actions IPs
 
       - name: Test coverage
         run: npm run test:coverage

@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   conventional-pr-title:
+    name: Lint PR Title
     if: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:

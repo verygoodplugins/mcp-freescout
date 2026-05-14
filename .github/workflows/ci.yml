@@ -5,16 +5,20 @@ on:
     branches: [main]
   push:
     branches: [main]
+  merge_group:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["24"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
 
       - name: Install dependencies
@@ -26,16 +30,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Unit tests
+      - name: Test
         run: npm test
-
-      - name: Integration tests
-        env:
-          FREESCOUT_URL: ${{ secrets.FREESCOUT_URL }}
-          FREESCOUT_API_KEY: ${{ secrets.FREESCOUT_API_KEY }}
-        run: npm run test:integration
-        continue-on-error: true  # Cloudflare may block GitHub Actions IPs
-
-      - name: Test coverage
-        run: npm run test:coverage
-        continue-on-error: true

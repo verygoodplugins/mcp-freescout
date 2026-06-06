@@ -160,7 +160,7 @@ The FreeScout API client (`freescout-api.ts`):
 
 - Authenticates with the `X-FreeScout-API-Key` header (not Basic auth).
 - Uses JSON request/response with retry handling.
-- Paginates list endpoints (`page`/`page_size`, `_embedded` + `page` envelopes).
+- Paginates list endpoints — request params are `page` and `per_page` (`per_page` is derived from `pageSize`); list responses come back in an `_embedded` + `page` envelope.
 - Recognizes ticket status values `active`, `pending`, `closed`, `spam` (search also accepts `all`).
 
 ## Important Notes

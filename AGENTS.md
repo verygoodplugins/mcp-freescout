@@ -1,42 +1,111 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Modules
+This file provides guidance to coding agents (Claude Code, Cursor, Codex, etc.) when working with this repository. It is the single source of truth; `CLAUDE.md` imports it via `@AGENTS.md`.
 
-- **Source**: TypeScript sources live in `src/` (`index.ts`, `freescout-api.ts`, `ticket-analyzer.ts`, `types.ts`).
-- **Build output**: Compiled JavaScript and type declarations are in `dist/` (do not edit directly).
-- **Entry point**: The MCP server CLI entry is `src/index.ts`, built to `dist/index.js` and exposed as `mcp-freescout`.
+## Project Overview
 
-## Build, Test & Development
+**MCP FreeScout** is an MCP server for FreeScout helpdesk integration. It enables AI assistants to manage support tickets, analyze issues, create responses, and integrate with Git workflows.
 
-- **Install**: `npm install` – install dependencies.
-- **Dev server**: `npm run dev` – run `src/index.ts` with live reload.
-- **Build**: `npm run build` – compile TypeScript to `dist/`.
-- **Test**: `npm test` – run Jest test suite.
-- **Lint**: `npm run lint` – run ESLint over `src/**/*.ts`.
-- **Format**: `npm run format` – apply Prettier formatting to `src/**/*.ts`.
+## Build & Development
 
-## Coding Style & Naming
+```bash
+# Build TypeScript to dist/
+npm run build
 
-- **Language**: TypeScript with ES modules (`type: module`).
-- **Formatting**: Use Prettier via `npm run format`; 2‑space indentation and single quotes where possible.
-- **Linting**: ESLint with `@typescript-eslint` rules; fix warnings before opening a PR.
-- **Naming**: Use `camelCase` for variables/functions, `PascalCase` for classes/types, and descriptive file names (e.g., `freescout-api.ts`).
+# Development with hot-reload
+npm run dev
 
-## Testing Guidelines
+# Run tests
+npm test
 
-- **Framework**: Jest (`npm test`).
-- **Location**: Place tests alongside code as `*.test.ts` or in a dedicated test folder if introduced consistently.
-- **Scope**: Cover new behavior, especially FreeScout API calls and ticket analysis logic.
-- **CI readiness**: Ensure `npm test` and `npm run lint` pass locally before pushing.
+# Lint code
+npm run lint
 
-## Commit & Pull Requests
+# Format code
+npm run format
+```
 
-- **Commits**: Write clear, imperative messages (e.g., `Add ticket analyzer tests`, `Fix FreeScout auth error`).
-- **Branches**: Use short, descriptive names (e.g., `feat/ticket-tags`, `fix/rate-limits`).
-- **PRs**: Include a concise summary, motivation, testing notes (`npm test`, `npm run lint`), and link related issues. Add screenshots or logs when changing error handling or CLI behavior.
+## Architecture
 
-## Memory MCP Usage
+```
+src/
+├── index.ts              # MCP server entry point, tool registration
+├── freescout-api.ts      # FreeScout API client
+├── ticket-analyzer.ts    # AI-powered ticket analysis
+├── git-integration.ts    # Git worktree and GitHub PR support
+└── types.ts              # TypeScript interfaces
+```
 
-- **Start of work**: Use the memory MCP to recall project-specific context for the area you are modifying (recent bugs, decisions, or related files).
-- **During/after work**: When you fix an issue or learn something important (API behavior, edge case, configuration nuance), store or update a memory via the MCP.
-- **Associations**: When relevant, associate new memories with existing ones (e.g., linking a bugfix to a specific module or decision) to keep context navigable for future tasks.
+## MCP Tools
+
+The server exposes these tools:
+
+### Ticket Management
+
+- **freescout_get_ticket** - Fetch ticket by ID or URL with threads
+- **freescout_analyze_ticket** - Analyze ticket to determine issue type and solution
+- **freescout_add_note** - Add internal note to ticket
+- **freescout_update_ticket** - Update ticket status and assignment
+- **freescout_create_draft_reply** - Create draft reply for review
+- **freescout_get_ticket_context** - Get ticket context for personalized replies
+- **freescout_search_tickets** - Search tickets by query and filters
+
+### Git Integration
+
+- **git_create_worktree** - Create Git worktree for ticket work
+- **git_remove_worktree** - Remove worktree after completion
+- **github_create_pr** - Create GitHub PR for ticket branch
+
+### Workflow
+
+- **freescout_implement_ticket** - Full workflow: analyze, worktree, plan
+
+## Environment Variables
+
+```env
+# Required: FreeScout instance URL
+FREESCOUT_URL=https://your-freescout.example.com
+
+# Required: FreeScout API key
+FREESCOUT_API_KEY=your_api_key
+
+# Optional: Default user ID for notes/drafts
+FREESCOUT_USER_ID=1
+
+# Optional: Git worktree base path
+WORKTREE_BASE_PATH=/path/to/worktrees
+
+# Optional: GitHub token for PR creation
+GITHUB_TOKEN=ghp_xxxx
+```
+
+## Common Tasks
+
+**Add a new tool:**
+
+1. Define tool schema in `src/index.ts` tools array
+2. Add handler in `CallToolRequestSchema` switch
+3. Implement API method in `freescout-api.ts`
+4. Add types in `types.ts`
+
+**Test a specific tool:**
+
+```bash
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"freescout_get_ticket","arguments":{"ticket":"12345"}},"id":1}' | npm start
+```
+
+## API Patterns
+
+The FreeScout API client uses:
+
+- Basic authentication with API key
+- JSON request/response format
+- Pagination for list endpoints
+- Status codes: active, pending, closed, spam
+
+## Important Notes
+
+- Ticket IDs can be provided as number, string, or full URL
+- Thread content is HTML, cleaned with DOMPurify before display
+- Draft replies require user review before sending
+- Worktrees are created in `./worktrees/` by default

@@ -528,6 +528,25 @@ export class FreeScoutAPI {
     return this.request<unknown>('/mailboxes');
   }
 
+  async getConversationTags(ticketId: string): Promise<string[]> {
+    const result = await this.request<{ _embedded?: { tags?: { name: string }[] } }>(
+      `/tags?conversationId=${ticketId}`
+    );
+    return result._embedded?.tags?.map((t) => t.name) ?? [];
+  }
+
+  async updateConversationTags(ticketId: string, tags: string[]): Promise<void> {
+    try {
+      await this.request<void>(`/conversations/${ticketId}/tags`, 'PUT', { tags });
+    } catch (error) {
+      // FreeScout returns 204 No Content — JSON parse throws, but the update succeeded
+      if (error instanceof Error && error.message.includes('Unexpected end of JSON')) {
+        return;
+      }
+      throw error;
+    }
+  }
+
   extractTicketIdFromUrl(url: string): string | null {
     // Match patterns like:
     // https://domain.com/conversation/12345

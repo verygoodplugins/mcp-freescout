@@ -418,6 +418,62 @@ server.registerTool(
   }
 );
 
+// Tool 9: Manage Conversation Tags
+server.registerTool(
+  'freescout_manage_tags',
+  {
+    title: 'Manage Conversation Tags',
+    description:
+      'Get or update tags on a FreeScout conversation. Use action "get" to list current tags, "set" to replace all tags, "add" to add tags without removing existing ones, "remove" to remove specific tags.',
+    inputSchema: {
+      ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
+      action: z.enum(['get', 'set', 'add', 'remove']).describe('Action to perform'),
+      tags: z
+        .array(z.string())
+        .optional()
+        .describe('Tags to set/add/remove (not required for "get")'),
+    },
+    outputSchema: {
+      success: z.boolean(),
+      ticketId: z.string(),
+      tags: z.array(z.string()),
+    },
+  },
+  async ({ ticket, action, tags }) => {
+    const ticketId = api.parseTicketInput(ticket);
+
+    if (action === 'get') {
+      const currentTags = await api.getConversationTags(ticketId);
+      const output = { success: true, ticketId, tags: currentTags };
+      return {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      };
+    }
+
+    const inputTags = tags ?? [];
+    let currentTags = await api.getConversationTags(ticketId);
+
+    let newTags: string[];
+    if (action === 'set') {
+      newTags = inputTags;
+    } else if (action === 'add') {
+      newTags = [...new Set([...currentTags, ...inputTags])];
+    } else {
+      // remove
+      newTags = currentTags.filter((t) => !inputTags.includes(t));
+    }
+
+    await api.updateConversationTags(ticketId, newTags);
+
+    const output = { success: true, ticketId, tags: newTags };
+    return {
+      content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+      structuredContent: output,
+    };
+  }
+);
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();

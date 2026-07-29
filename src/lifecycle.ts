@@ -3,9 +3,14 @@
  *
  * When an intermediate wrapper (npx → npm exec → node bin → server) keeps the
  * server's stdin write-end open, a dead client never delivers EOF, so the leaf
- * sits in the event loop forever and can thrash swap (multi-GB). stdin
- * 'end'/'close', transport close, and signals all miss that orphan case. The
- * watchdog catches it by noticing the original parent is gone.
+ * sits in the event loop forever and can thrash swap (multi-GB). Soft stdin
+ * EOF alone is not enough to catch that orphan case. The watchdog catches it
+ * by noticing the original parent is gone.
+ *
+ * Soft stdin EOF is intentional: do NOT call `transport.close()` and do NOT
+ * `process.exit` on `end`/`close`. Closing the transport trips the MCP SDK
+ * `onclose` → hard exit and breaks one-shot `echo … | npm start` flows.
+ * Hard exit is reserved for parent-watchdog reparent + OS signals.
  *
  * Kept side-effect-free on import so unit tests can cover it without spawning
  * the full server.
@@ -95,21 +100,11 @@ export function installStdioLifecycle(options: {
     process.exit(code);
   };
 
-  // Soft stdin EOF: close the transport but do NOT process.exit. One-shot
-  // `echo … | npm start` (AGENTS.md) delivers end immediately after the
-  // request bytes; a hard exit would kill in-flight handlers before the MCP
-  // response is written. Node drains the event loop once work finishes.
-  // Orphans that keep stdin open (no EOF) are still killed by the watchdog.
-  const softStdinEof = () => {
-    if (shuttingDown) return;
-    try {
-      void options.transport.close?.();
-    } catch {
-      /* best effort */
-    }
-  };
-  process.stdin.on('end', softStdinEof);
-  process.stdin.on('close', softStdinEof);
+  // Soft stdin EOF → no-op. Do not transport.close() (SDK onclose → hard exit)
+  // and do not process.exit. One-shot pipes must drain in-flight handlers;
+  // orphans that keep stdin open are killed by the parent watchdog / signals.
+  process.stdin.on('end', () => {});
+  process.stdin.on('close', () => {});
   if (options.onCloseAssignable) {
     options.onCloseAssignable.onclose = () => shutdown(0);
   }

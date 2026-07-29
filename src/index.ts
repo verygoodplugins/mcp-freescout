@@ -11,6 +11,7 @@ import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
 import { TicketAnalysisSchema, SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
 import { loadEnv } from './env.js';
+import { installStdioLifecycle } from './lifecycle.js';
 
 type PackageJson = { version: string };
 const require = createRequire(import.meta.url);
@@ -421,6 +422,11 @@ server.registerTool(
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
+  installStdioLifecycle({
+    transport,
+    onCloseAssignable: server.server,
+    envName: 'FREESCOUT_PARENT_WATCHDOG_MS',
+  });
   await server.connect(transport);
   console.error(`FreeScout MCP Server v${packageJson.version} running...`);
 }

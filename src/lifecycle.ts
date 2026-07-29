@@ -95,8 +95,21 @@ export function installStdioLifecycle(options: {
     process.exit(code);
   };
 
-  process.stdin.on('end', () => shutdown(0));
-  process.stdin.on('close', () => shutdown(0));
+  // Soft stdin EOF: close the transport but do NOT process.exit. One-shot
+  // `echo … | npm start` (AGENTS.md) delivers end immediately after the
+  // request bytes; a hard exit would kill in-flight handlers before the MCP
+  // response is written. Node drains the event loop once work finishes.
+  // Orphans that keep stdin open (no EOF) are still killed by the watchdog.
+  const softStdinEof = () => {
+    if (shuttingDown) return;
+    try {
+      void options.transport.close?.();
+    } catch {
+      /* best effort */
+    }
+  };
+  process.stdin.on('end', softStdinEof);
+  process.stdin.on('close', softStdinEof);
   if (options.onCloseAssignable) {
     options.onCloseAssignable.onclose = () => shutdown(0);
   }

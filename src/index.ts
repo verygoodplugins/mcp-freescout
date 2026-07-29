@@ -421,11 +421,14 @@ server.registerTool(
 
 // Start the server
 async function main() {
+  // Capture before any await — process.ppid is dynamic (mcp-automem #137).
+  const parentPid = process.ppid;
   const transport = new StdioServerTransport();
   installStdioLifecycle({
     transport,
     onCloseAssignable: server.server,
     envName: 'FREESCOUT_PARENT_WATCHDOG_MS',
+    parentPid,
   });
   await server.connect(transport);
   console.error(`FreeScout MCP Server v${packageJson.version} running...`);

@@ -63,15 +63,21 @@ export function startParentWatchdog(
 
 /**
  * Install stdin/transport/signal/parent-watchdog shutdown hooks.
- * Call before `server.connect(transport)`. Captures `process.ppid` immediately.
+ * Call before `server.connect(transport)`.
+ *
+ * If `main()` awaits anything before this call, pass `parentPid` captured
+ * synchronously at the top of `main()` — `process.ppid` is dynamic, and a
+ * late capture after reparent would make the watchdog a no-op (mcp-automem #137).
  */
 export function installStdioLifecycle(options: {
   transport: { close?: () => unknown };
   onCloseAssignable?: { onclose?: (() => void) | null };
   envName?: string;
   onShutdown?: () => void;
+  /** Prefer a pid captured before any `await` in `main()`. */
+  parentPid?: number;
 }): () => void {
-  const parentPid = process.ppid;
+  const parentPid = options.parentPid ?? process.ppid;
   let shuttingDown = false;
   const shutdown = (code = 0) => {
     if (shuttingDown) return;

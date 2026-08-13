@@ -287,6 +287,20 @@ describe('FreeScoutAPI', () => {
       );
     });
 
+    it('should resolve on a 204 response with an empty body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        json: async () => {
+          throw new Error('Unexpected end of JSON input');
+        },
+      });
+
+      await expect(
+        api.updateConversation('123', { status: 'closed', byUser: 1 })
+      ).resolves.toEqual({});
+    });
+
     it('should handle update failures', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

@@ -320,6 +320,12 @@ export class FreeScoutAPI {
           throw new Error(`FreeScout API error: ${response.status} - ${errorText}`);
         }
 
+        // Updating a conversation answers 204 with an empty body, which
+        // response.json() cannot parse.
+        if (response.status === 204) {
+          return {} as T;
+        }
+
         return response.json() as Promise<T>;
       } catch (error: unknown) {
         clearTimeout(timeoutId);

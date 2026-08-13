@@ -237,6 +237,9 @@ Update ticket status and/or assignment.
 - `ticket` (required): Ticket ID, number, or FreeScout URL
 - `status` (optional): New status ('active', 'pending', 'closed', 'spam')
 - `assignTo` (optional): User ID to assign the ticket to
+- `userId` (optional): User ID performing the update (defaults to env setting)
+
+FreeScout credits status and assignment changes to the user sent as `byUser`, so `userId` decides who shows up in the ticket activity log. Without it the change is attributed to `FREESCOUT_DEFAULT_USER_ID`, even when another agent made it.
 
 **Natural Language Examples:**
 
@@ -245,6 +248,7 @@ Update ticket status and/or assignment.
 - "Assign this ticket to user ID 2"
 - "Set ticket status to active"
 - "Update ticket #12345 status to closed and assign to user 1"
+- "Close ticket #12345 on behalf of user 2"
 
 #### `freescout_create_draft_reply`
 

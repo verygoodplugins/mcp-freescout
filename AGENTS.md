@@ -117,7 +117,7 @@ The server registers **8 tools**, all prefixed `freescout_`. (There are no Git/G
 1. **freescout_get_ticket** — Fetch a ticket by ID, number, or URL, optionally with all conversation threads (`includeThreads`, default true).
 2. **freescout_analyze_ticket** — Analyze a ticket to determine issue type, root cause, and suggested solution (returns structured `TicketAnalysis`).
 3. **freescout_add_note** — Add an internal note to a ticket (`userId` defaults to env).
-4. **freescout_update_ticket** — Update ticket `status` (`active`/`pending`/`closed`/`spam`) and/or `assignTo` (user ID).
+4. **freescout_update_ticket** — Update ticket `status` (`active`/`pending`/`closed`/`spam`) and/or `assignTo` (user ID). `userId` sets the FreeScout `byUser` so the activity log credits the right agent (defaults to env).
 5. **freescout_create_draft_reply** — Create a review-before-send draft reply. Optional `to`/`cc`/`bcc`: omit to inherit existing recipients, pass `[]` to clear.
 6. **freescout_get_ticket_context** — Get condensed ticket + customer context to help draft personalized replies.
 7. **freescout_search_tickets** — Search with explicit filters (`textSearch`, `assignee` `"unassigned"`/`"any"`/number, `updatedSince`/`createdSince` ISO or relative like `7d`/`24h`, `mailboxId`, `status`, `state`, `page`/`pageSize`, `includeLastMessage`).

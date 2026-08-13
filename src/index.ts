@@ -150,6 +150,12 @@ server.registerTool(
         .optional()
         .describe('New ticket status'),
       assignTo: z.number().optional().describe('User ID to assign the ticket to'),
+      userId: z
+        .number()
+        .optional()
+        .describe(
+          'User ID performing the update, so FreeScout attributes it to that agent in the activity log (defaults to env setting)'
+        ),
     },
     outputSchema: {
       success: z.boolean(),
@@ -157,14 +163,15 @@ server.registerTool(
       ticketId: z.string(),
     },
   },
-  async ({ ticket, status, assignTo }) => {
+  async ({ ticket, status, assignTo, userId }) => {
     const ticketId = api.parseTicketInput(ticket);
+    const actualUserId = userId ?? DEFAULT_USER_ID;
 
     const updates: {
       status?: 'active' | 'pending' | 'closed' | 'spam';
       assignTo?: number;
       byUser?: number;
-    } = { byUser: DEFAULT_USER_ID };
+    } = { byUser: actualUserId };
     if (status) updates.status = status;
     if (assignTo) updates.assignTo = assignTo;
 

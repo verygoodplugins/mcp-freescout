@@ -287,6 +287,22 @@ describe('FreeScoutAPI', () => {
       );
     });
 
+    it('should forward byUser so FreeScout attributes the change', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+
+      await api.updateConversation('123', { status: 'closed', byUser: 7 });
+
+      const requestInit = mockFetch.mock.calls[0][1] as { body: string };
+      expect(JSON.parse(requestInit.body)).toEqual({
+        status: 'closed',
+        byUser: 7,
+      });
+    });
+
     it('should handle update failures', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

@@ -142,7 +142,7 @@ FREESCOUT_DEFAULT_USER_ID=1
 
 **Add a new tool:**
 
-1. Call `server.registerTool(name, { title, description, inputSchema }, handler)` in `src/index.ts`. `inputSchema` is a Zod shape; add `outputSchema` only if the response is reliably structured (some tools omit it because raw API responses have optional/undefined fields).
+1. Call `server.registerTool(name, { title, description, inputSchema }, handler)` in `src/index.ts`. `inputSchema` is a Zod shape. Do not declare `outputSchema`: the MCP SDK converts it to JSON Schema draft-07, and clients that validate tool schemas against 2020-12 (Claude Code among them) refuse to register the tool. Return the payload in `content`, plus `structuredContent` when the response is reliably structured.
 2. Implement the underlying API call as a method on `FreeScoutAPI` in `freescout-api.ts`.
 3. Add or extend Zod schemas / types in `types.ts`.
 4. Add tests under `src/__tests__/`.

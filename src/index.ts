@@ -9,7 +9,7 @@ import {
 } from './draft-recipients.js';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { TicketAnalysisSchema, SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
+import { SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -78,6 +78,9 @@ server.registerTool(
 );
 
 // Tool 2: Analyze Ticket
+// Note: outputSchema removed because the MCP SDK converts it to JSON Schema
+// draft-07, which clients that validate against 2020-12 reject outright.
+// The payload is still returned in content and structuredContent.
 server.registerTool(
   'freescout_analyze_ticket',
   {
@@ -87,7 +90,6 @@ server.registerTool(
     inputSchema: {
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
     },
-    outputSchema: TicketAnalysisSchema,
   },
   async ({ ticket }) => {
     const ticketId = api.parseTicketInput(ticket);
@@ -102,6 +104,7 @@ server.registerTool(
 );
 
 // Tool 3: Add Note
+// Note: outputSchema removed for the same draft-07 dialect reason as above.
 server.registerTool(
   'freescout_add_note',
   {
@@ -111,11 +114,6 @@ server.registerTool(
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
       note: z.string().describe('The note content to add'),
       userId: z.number().optional().describe('User ID for the note (default: from env)'),
-    },
-    outputSchema: {
-      success: z.boolean(),
-      message: z.string(),
-      ticketId: z.string(),
     },
   },
   async ({ ticket, note, userId }) => {
@@ -138,6 +136,7 @@ server.registerTool(
 );
 
 // Tool 4: Update Ticket
+// Note: outputSchema removed for the same draft-07 dialect reason as above.
 server.registerTool(
   'freescout_update_ticket',
   {
@@ -150,11 +149,6 @@ server.registerTool(
         .optional()
         .describe('New ticket status'),
       assignTo: z.number().optional().describe('User ID to assign the ticket to'),
-    },
-    outputSchema: {
-      success: z.boolean(),
-      message: z.string(),
-      ticketId: z.string(),
     },
   },
   async ({ ticket, status, assignTo }) => {
@@ -184,6 +178,7 @@ server.registerTool(
 );
 
 // Tool 5: Create Draft Reply
+// Note: outputSchema removed for the same draft-07 dialect reason as above.
 server.registerTool(
   'freescout_create_draft_reply',
   {
@@ -208,12 +203,6 @@ server.registerTool(
         .array(z.string().email())
         .optional()
         .describe('Optional BCC recipients. Omit to preserve existing recipients; pass [] to clear.'),
-    },
-    outputSchema: {
-      success: z.boolean(),
-      message: z.string(),
-      ticketId: z.string(),
-      draftId: z.number(),
     },
   },
   async ({ ticket, replyText, userId, to, cc, bcc }) => {

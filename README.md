@@ -10,31 +10,21 @@ An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management.
 - 📊 **Advanced Search**: First-class filter parameters with relative time support ("7d", "24h")
 - 🔒 **Type Safety**: Full Zod schema validation with structured outputs
 - 🔁 **Reliability**: Automatic retry logic with exponential backoff for transient failures
-- ⚡ **Modern SDK**: Built on MCP SDK 1.25+ with `McpServer` and `registerTool()` patterns
+- ⚡ **Protocol-ready stdio**: A fresh `buildServer` factory serves both 2025-era and 2026 MCP stdio clients
 
-## What's New in v2.0
+## v3 runtime
 
-**Breaking Changes:**
-
-- Search API redesigned with explicit filter parameters instead of query-string syntax
-- Migrated to modern `McpServer` class with structured outputs
-- Removed Git/GitHub tools (use dedicated Git MCP servers for workflow automation)
-
-**New Features:**
-
-- Explicit search filters: `assignee`, `updatedSince`, `createdSince`, `page`, `pageSize`
-- Relative time support: Use "7d", "24h", "30m" in date filters
-- Exponential backoff retry logic for network errors and rate limits
-- Structured content responses for better type safety
-- Full Zod schema validation throughout
-
-See [CHANGELOG.md](CHANGELOG.md) for migration guide.
+- Requires Node.js 24 or newer.
+- Uses `@modelcontextprotocol/server` 2.x with Zod 4 input schemas.
+- Serves both the 2025 legacy handshake and the 2026 stdio protocol from the same server factory.
+- Delivers `structuredContent` for stable analysis and write-operation results without declaring output schemas.
+- Accepts FreeScout's successful `204 No Content` update responses and records the user ID that initiated a ticket update.
 
 ## Installation
 
 ### Prerequisites
 
-- Node.js 18 or higher
+- Node.js 24 or higher
 - FreeScout instance with API access enabled
 
 ## Quick Start (Recommended)
@@ -91,7 +81,7 @@ Add this to your Cursor settings.json or create `~/.cursor/mcp.json`:
 }
 ```
 
-That's it! The server will automatically use your current workspace directory for Git operations.
+The server communicates only with the FreeScout instance configured in its environment.
 
 ## Manual Installation (Alternative)
 
@@ -469,10 +459,9 @@ Jack`,
 
 ```javascript
 // For third-party issues or feature requests
-const reply = await mcp.callTool('freescout_draft_reply', {
+const reply = await mcp.callTool('freescout_create_draft_reply', {
   ticket: '12345',
-  fixDescription: 'This is a limitation of the Elementor plugin that we cannot override.',
-  isExplanatory: true,
+  replyText: 'This is a limitation of the Elementor plugin that we cannot override.',
 });
 ```
 
@@ -493,19 +482,17 @@ const reply = await mcp.callTool('freescout_draft_reply', {
 
 3. **MCP Server** (`index.ts`)
    - Tool registration and request handling
-   - Integration with Git for worktree management
+   - Fresh server factory for each stdio connection
    - Response formatting and error handling
 
 ### Data Flow
 
 ```
-User Request → MCP Server → FreeScout API → Ticket Analyzer
-                    ↓                             ↓
-              Git Operations              Analysis Results
-                    ↓                             ↓
-              Worktree Management         Customer Reply
-                    ↓                             ↓
-                Response → User
+MCP client (2025 or 2026) → stdio entry → buildServer → FreeScout API
+                                                   ↓
+                                            Ticket analysis
+                                                   ↓
+                                            Response to client
 ```
 
 ## Development
@@ -630,7 +617,7 @@ The `freescout_search_tickets` tool has been redesigned with explicit filter par
 
 1. **Relative time filters**: Use `"7d"`, `"24h"`, `"30m"` instead of calculating ISO dates
 2. **Pagination**: Add `page` and `pageSize` parameters for large result sets
-3. **Structured outputs**: All tools now return typed `structuredContent` for better integration
+3. **Structured outputs**: Stable analysis and write results include `structuredContent`; tools do not declare output schemas
 
 ### Automatic Retries
 

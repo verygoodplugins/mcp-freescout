@@ -1,7 +1,4 @@
-import {
-  resolveDraftReplyRecipients,
-  shouldInheritDraftRecipients,
-} from '../draft-recipients.js';
+import { resolveDraftReplyRecipients, shouldInheritDraftRecipients } from '../draft-recipients.js';
 
 describe('draft recipient resolution', () => {
   it('inherits omitted recipient fields from the conversation', () => {

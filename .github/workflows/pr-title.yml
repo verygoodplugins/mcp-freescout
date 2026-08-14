@@ -14,7 +14,7 @@ permissions:
 jobs:
   conventional-pr-title:
     name: Lint PR Title
-    if: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.user.login != 'dependabot[bot]' }}
+    if: ${{ github.event.pull_request.base.ref == 'main' }}
     runs-on: ubuntu-latest
     steps:
       - name: Validate conventional PR title

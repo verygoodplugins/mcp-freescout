@@ -9,20 +9,22 @@
     "mcp-freescout": "dist/index.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('node:fs').chmodSync('dist/index.js', 0o755)\"",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "jest --testPathIgnorePatterns=integration",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:all": "jest",
+    "test": "vitest run --exclude src/__tests__/integration.test.ts",
+    "test:coverage": "vitest run --coverage --exclude src/__tests__/integration.test.ts",
+    "test:integration": "vitest run src/__tests__/integration.test.ts",
+    "test:all": "vitest run",
     "lint": "eslint src/",
-    "format": "prettier --write src/**/*.ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -45,20 +47,25 @@
     "url": "https://github.com/verygoodplugins/mcp-freescout/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/server": "^2.0.0",
     "dotenv": "^17.2.3",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.3",
-    "eslint": "^9.0.0",
-    "jest": "^30.3.0",
-    "prettier": "^3.1.0",
-    "ts-jest": "^29.4.6",
-    "tsx": "^4.6.0",
-    "typescript": "^5.3.0",
-    "typescript-eslint": "^8.0.0"
-  }
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }

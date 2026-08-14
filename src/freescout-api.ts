@@ -320,12 +320,20 @@ export class FreeScoutAPI {
           throw new Error(`FreeScout API error: ${response.status} - ${errorText}`);
         }
 
+        // FreeScout returns 204 No Content for successful update operations.
+        // Do not attempt JSON parsing when the response intentionally has no body.
+        if (response.status === 204) {
+          return undefined as T;
+        }
+
         return response.json() as Promise<T>;
       } catch (error: unknown) {
         clearTimeout(timeoutId);
 
         if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error(`FreeScout API timeout after ${this.retryOptions.timeout}ms`);
+          throw new Error(`FreeScout API timeout after ${this.retryOptions.timeout}ms`, {
+            cause: error,
+          });
         }
 
         throw error;
@@ -402,8 +410,8 @@ export class FreeScoutAPI {
       assignTo?: number;
       byUser?: number;
     }
-  ): Promise<FreeScoutConversation> {
-    return this.request<FreeScoutConversation>(`/conversations/${ticketId}`, 'PUT', updates);
+  ): Promise<void> {
+    await this.request<unknown>(`/conversations/${ticketId}`, 'PUT', updates);
   }
 
   /**

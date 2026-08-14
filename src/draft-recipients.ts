@@ -14,7 +14,9 @@ export function resolveDraftReplyRecipients(
 
   for (const field of recipientFields) {
     const value =
-      explicitRecipients[field] !== undefined ? explicitRecipients[field] : inheritedRecipients[field];
+      explicitRecipients[field] !== undefined
+        ? explicitRecipients[field]
+        : inheritedRecipients[field];
 
     if (value !== undefined) {
       resolved[field] = value;

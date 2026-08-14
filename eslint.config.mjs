@@ -1,14 +1,16 @@
-// ESLint flat config for VGP MCP servers
-// Requires: eslint ^9.0.0, typescript-eslint ^8.0.0
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
+  prettier,
   {
     files: ['src/**/*.ts'],
     rules: {
+      // MCP stdio servers must not write to stdout outside the protocol.
+      'no-console': ['error', { allow: ['error', 'warn'] }],
       // Allow unused vars prefixed with underscore
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -19,6 +21,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', '**/*.js', '**/*.mjs', '**/*.cjs'],
+    ignores: ['dist/', 'node_modules/', 'coverage/'],
   }
 );

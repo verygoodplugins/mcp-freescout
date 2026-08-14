@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { vi } from 'vitest';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,18 +10,14 @@ describe('loadEnv', () => {
     writeFileSync(join(tempDir, '.env'), 'HELLO=World\n');
 
     const stdoutWrites: string[] = [];
-    const stdoutSpy = jest
+    const stdoutSpy = vi
       .spyOn(process.stdout, 'write')
-      .mockImplementation(
-        (chunk: string | Buffer | Uint8Array, ..._args: unknown[]) => {
-          stdoutWrites.push(
-            typeof chunk === 'string'
-              ? chunk
-              : (chunk?.toString?.() ?? String(chunk))
-          );
-          return true;
-        }
-      );
+      .mockImplementation((chunk: string | Buffer | Uint8Array, ..._args: unknown[]) => {
+        stdoutWrites.push(
+          typeof chunk === 'string' ? chunk : (chunk?.toString?.() ?? String(chunk))
+        );
+        return true;
+      });
 
     process.chdir(tempDir);
     const { loadEnv } = await import('../env.js');

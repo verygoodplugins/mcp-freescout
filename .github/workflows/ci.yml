@@ -5,16 +5,20 @@ on:
     branches: [main]
   push:
     branches: [main]
+  merge_group:
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: "20"
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -26,16 +30,32 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Unit tests
+      - name: Test
         run: npm test
-
-      - name: Integration tests
-        env:
-          FREESCOUT_URL: ${{ secrets.FREESCOUT_URL }}
-          FREESCOUT_API_KEY: ${{ secrets.FREESCOUT_API_KEY }}
-        run: npm run test:integration
-        continue-on-error: true  # Cloudflare may block GitHub Actions IPs
-
       - name: Test coverage
         run: npm run test:coverage
-        continue-on-error: true
+
+  integration:
+    name: Integration (non-blocking)
+    needs: test
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    env:
+      FREESCOUT_URL: ${{ secrets.FREESCOUT_URL }}
+      FREESCOUT_API_KEY: ${{ secrets.FREESCOUT_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Integration tests
+        run: npm run test:integration

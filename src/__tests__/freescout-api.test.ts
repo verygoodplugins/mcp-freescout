@@ -1,8 +1,9 @@
 import { FreeScoutAPI } from '../freescout-api.js';
 import { ConversationSchema, ThreadSchema, CustomerSchema } from '../types.js';
+import { vi } from 'vitest';
 
 // Mock fetch globally
-const mockFetch = jest.fn();
+const mockFetch = vi.fn();
 const globalWithFetch = globalThis as typeof globalThis & {
   fetch: typeof mockFetch;
 };
@@ -14,7 +15,7 @@ describe('FreeScoutAPI', () => {
   const mockApiKey = 'test-key-123';
 
   beforeEach(() => {
-    jest.spyOn(Math, 'random').mockReturnValue(0);
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     api = new FreeScoutAPI(mockBaseUrl, mockApiKey, {
       maxRetries: 2,
       initialDelay: 0,
@@ -24,7 +25,7 @@ describe('FreeScoutAPI', () => {
     mockFetch.mockReset();
   });
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('constructor', () => {
@@ -81,13 +82,11 @@ describe('FreeScoutAPI', () => {
     });
 
     it('should retry on transient failures', async () => {
-      mockFetch
-        .mockRejectedValueOnce(new Error('ECONNRESET'))
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: async () => mockConversationResponse,
-        });
+      mockFetch.mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockConversationResponse,
+      });
 
       const result = await api.getConversation('123');
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -287,6 +286,28 @@ describe('FreeScoutAPI', () => {
       );
     });
 
+    it('sends the initiating user ID with ticket updates', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+
+      await api.updateConversation('123', { assignTo: 22, byUser: 9 });
+
+      const body = JSON.parse((mockFetch.mock.calls[0][1]?.body as string) || '{}');
+      expect(body).toMatchObject({ assignTo: 22, byUser: 9 });
+    });
+
+    it('accepts a successful 204 update without trying to parse a response body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+      });
+
+      await expect(api.updateConversation('123', { status: 'closed' })).resolves.toBeUndefined();
+    });
+
     it('should handle update failures', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -294,9 +315,7 @@ describe('FreeScoutAPI', () => {
         text: async () => 'Invalid status',
       });
 
-      await expect(
-        api.updateConversation('123', { status: 'closed' })
-      ).rejects.toThrow();
+      await expect(api.updateConversation('123', { status: 'closed' })).rejects.toThrow();
     });
   });
 
@@ -458,9 +477,7 @@ describe('FreeScoutAPI', () => {
 
     it('should parse various ticket input formats', () => {
       expect(api.parseTicketInput('123')).toBe('123');
-      expect(api.parseTicketInput('https://test.com/conversation/456')).toBe(
-        '456'
-      );
+      expect(api.parseTicketInput('https://test.com/conversation/456')).toBe('456');
     });
   });
 
@@ -495,9 +512,7 @@ describe('FreeScoutAPI', () => {
         });
       });
 
-      await expect(api.getConversation('123')).rejects.toThrow(
-        /timeout after 10ms/
-      );
+      await expect(api.getConversation('123')).rejects.toThrow(/timeout after 10ms/);
     });
   });
 

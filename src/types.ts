@@ -90,7 +90,26 @@ export const TicketAnalysisSchema = z.object({
 
 // Search filter schemas
 export const SearchFiltersSchema = z.object({
-  textSearch: z.string().optional(),
+  // FreeScout's REST API has no body-level full-text search. `textSearch` is
+  // matched against the conversation subject only (mapped to the `subject`
+  // filter). Prefer the explicit `subject` field; `textSearch` is kept as an
+  // alias for backward compatibility.
+  textSearch: z
+    .string()
+    .optional()
+    .describe('Alias for `subject`: matches the conversation subject only, not message bodies.'),
+  subject: z
+    .string()
+    .optional()
+    .describe('Filter by conversation subject (partial match).'),
+  customerEmail: z
+    .string()
+    .optional()
+    .describe('Filter by the customer email address on the conversation.'),
+  number: z
+    .number()
+    .optional()
+    .describe('Look up a single conversation by its ticket number.'),
   assignee: z.union([z.literal('unassigned'), z.literal('any'), z.number()]).optional(),
   updatedSince: z.string().optional(), // ISO date or relative like "7d", "24h"
   createdSince: z.string().optional(),

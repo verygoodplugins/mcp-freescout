@@ -178,7 +178,10 @@ describe('FreeScoutAPI', () => {
       expect(result._embedded?.conversations).toHaveLength(2);
 
       const url = new URL(mockFetch.mock.calls[0][0] as string);
-      expect(url.searchParams.get('query')).toBe('authentication');
+      // textSearch is an alias for the subject filter; the old `query` param
+      // does not exist in the FreeScout API.
+      expect(url.searchParams.get('subject')).toBe('authentication');
+      expect(url.searchParams.has('query')).toBe(false);
       expect(url.searchParams.get('status')).toBe('active');
       // FreeScout documents empty assignedTo as the unassigned filter.
       expect(url.searchParams.has('assignedTo')).toBe(true);
@@ -210,6 +213,25 @@ describe('FreeScoutAPI', () => {
       expect(url.searchParams.has('assignee')).toBe(false);
     });
 
+    it('should map subject, customerEmail and number to FreeScout filters', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({
+        subject: 'invoice',
+        customerEmail: 'jane@example.com',
+        number: 3704,
+      });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('subject')).toBe('invoice');
+      expect(url.searchParams.get('customerEmail')).toBe('jane@example.com');
+      expect(url.searchParams.get('number')).toBe('3704');
+    });
+
     it('should omit assignment filter when assignee is any', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -230,6 +252,19 @@ describe('FreeScoutAPI', () => {
       expect(url.searchParams.get('mailboxId')).toBe('6');
     });
 
+    it('should prefer explicit subject over the textSearch alias', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ subject: 'billing', textSearch: 'ignored' });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('subject')).toBe('billing');
+    });
+
     it('should omit assignment filter when assignee is not provided', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -245,7 +280,7 @@ describe('FreeScoutAPI', () => {
       const url = new URL(mockFetch.mock.calls[0][0] as string);
       expect(url.searchParams.has('assignedTo')).toBe(false);
       expect(url.searchParams.has('assignee')).toBe(false);
-      expect(url.searchParams.get('query')).toBe('error');
+      expect(url.searchParams.get('subject')).toBe('error');
     });
 
     it('should handle empty search results', async () => {

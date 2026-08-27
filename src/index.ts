@@ -358,7 +358,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
     {
       title: 'Search FreeScout Tickets',
       description:
-        'Search for FreeScout tickets with explicit filter parameters. Use assignee: "unassigned" for unassigned tickets, or assignee: number for specific user. Supports relative time filters like "7d", "24h". Use includeLastMessage: true to get a preview of the most recent message for each ticket.',
+        'Search for FreeScout tickets with explicit filter parameters. Text search is subject-only (FreeScout has no message-body full-text search): use subject (or its alias textSearch) to match the conversation subject, customerEmail to filter by the customer, and number to look up a single ticket. Use assignee: "unassigned" for unassigned tickets, or assignee: number for a specific user. Supports relative time filters like "7d", "24h". Use includeLastMessage: true to get a preview of the most recent message for each ticket.',
       inputSchema: SearchFiltersSchema,
     },
     async (filters) => {

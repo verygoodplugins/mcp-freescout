@@ -38,7 +38,7 @@ function createApi() {
     createDraftReply: vi.fn().mockResolvedValue({ id: 88 }),
     searchConversations: vi.fn().mockResolvedValue({
       _embedded: { conversations: [conversation] },
-      page: { total_elements: 1, number: 1, total_pages: 1 },
+      page: { size: 50, totalElements: 1, number: 1, totalPages: 1 },
     }),
     getMailboxes: vi.fn().mockResolvedValue([{ id: 4, name: 'Support' }]),
   };
@@ -114,6 +114,10 @@ describe('buildServer', () => {
     expect(draft.structuredContent).toMatchObject({ success: true, draftId: 88 });
     expect(context.structuredContent).toBeUndefined();
     expect(search.structuredContent).toBeUndefined();
+    // totalCount must read the FreeScout `page.totalElements` key, not a
+    // snake_case variant that would silently resolve to 0.
+    const searchText = (search.content as Array<{ type: string; text: string }>)[0].text;
+    expect(JSON.parse(searchText).totalCount).toBe(1);
     expect(mailboxes.structuredContent).toBeUndefined();
     expect(api.addThread).toHaveBeenCalledWith('123', 'note', 'Investigating', 7);
     expect(api.updateConversation).toHaveBeenCalledWith('123', {

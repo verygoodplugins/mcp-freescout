@@ -159,7 +159,7 @@ describe('FreeScoutAPI', () => {
           },
         ],
       },
-      page: { size: 50, total_elements: 2, total_pages: 1, number: 1 },
+      page: { size: 50, totalElements: 2, totalPages: 1, number: 1 },
     };
 
     it('should search with explicit filters', async () => {
@@ -254,7 +254,7 @@ describe('FreeScoutAPI', () => {
         status: 200,
         json: async () => ({
           _embedded: { conversations: [] },
-          page: { size: 50, total_elements: 0, total_pages: 0, number: 1 },
+          page: { size: 50, totalElements: 0, totalPages: 0, number: 1 },
         }),
       });
 
@@ -329,6 +329,21 @@ describe('FreeScoutAPI', () => {
 
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain('page=2');
+    });
+
+    it('should send pageSize using the FreeScout param name', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({ pageSize: 5 });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      // FreeScout expects `pageSize`; the previous `per_page` was ignored.
+      expect(url.searchParams.get('pageSize')).toBe('5');
+      expect(url.searchParams.has('per_page')).toBe(false);
     });
   });
 

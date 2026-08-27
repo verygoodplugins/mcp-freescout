@@ -477,7 +477,10 @@ export class FreeScoutAPI {
     }
 
     if (filters.pageSize) {
-      params.append('per_page', filters.pageSize.toString());
+      // FreeScout's list API uses `pageSize`, not `per_page`. Unknown query
+      // params are ignored, so `per_page` was a silent no-op and every request
+      // fell back to the server default of 50 results per page.
+      params.append('pageSize', filters.pageSize.toString());
     }
 
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(

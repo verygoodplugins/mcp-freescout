@@ -177,10 +177,75 @@ describe('FreeScoutAPI', () => {
 
       expect(result._embedded?.conversations).toHaveLength(2);
 
-      const url = mockFetch.mock.calls[0][0] as string;
-      expect(url).toContain('query=authentication');
-      expect(url).toContain('status=active');
-      expect(url).toContain('assignee=null');
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('query')).toBe('authentication');
+      expect(url.searchParams.get('status')).toBe('active');
+      // FreeScout documents empty assignedTo as the unassigned filter.
+      expect(url.searchParams.has('assignedTo')).toBe(true);
+      expect(url.searchParams.get('assignedTo')).toBe('');
+      expect(url.searchParams.has('assignee')).toBe(false);
+    });
+
+    it('should map a numeric assignee to assignedTo', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({
+        assignee: 7,
+        mailboxId: 6,
+        status: 'active',
+        page: 1,
+        pageSize: 50,
+      });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.get('assignedTo')).toBe('7');
+      expect(url.searchParams.get('mailboxId')).toBe('6');
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('page')).toBe('1');
+      expect(url.searchParams.get('per_page')).toBe('50');
+      expect(url.searchParams.has('assignee')).toBe(false);
+    });
+
+    it('should omit assignment filter when assignee is any', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({
+        assignee: 'any',
+        status: 'active',
+        mailboxId: 6,
+      });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.has('assignedTo')).toBe(false);
+      expect(url.searchParams.has('assignee')).toBe(false);
+      expect(url.searchParams.get('status')).toBe('active');
+      expect(url.searchParams.get('mailboxId')).toBe('6');
+    });
+
+    it('should omit assignment filter when assignee is not provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockSearchResponse,
+      });
+
+      await api.searchConversations({
+        status: 'active',
+        textSearch: 'error',
+      });
+
+      const url = new URL(mockFetch.mock.calls[0][0] as string);
+      expect(url.searchParams.has('assignedTo')).toBe(false);
+      expect(url.searchParams.has('assignee')).toBe(false);
+      expect(url.searchParams.get('query')).toBe('error');
     });
 
     it('should handle empty search results', async () => {

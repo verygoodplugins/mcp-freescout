@@ -206,7 +206,7 @@ describe('FreeScoutAPI', () => {
       expect(url.searchParams.get('mailboxId')).toBe('6');
       expect(url.searchParams.get('status')).toBe('active');
       expect(url.searchParams.get('page')).toBe('1');
-      expect(url.searchParams.get('per_page')).toBe('50');
+      expect(url.searchParams.get('pageSize')).toBe('50');
       expect(url.searchParams.has('assignee')).toBe(false);
     });
 

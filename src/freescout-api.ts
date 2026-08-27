@@ -427,14 +427,14 @@ export class FreeScoutAPI {
       params.append('query', filters.textSearch.trim());
     }
 
-    // Assignee filter
-    if (filters.assignee !== undefined) {
+    // Assignee filter. FreeScout's list API uses `assignedTo`, not `assignee`.
+    // Unknown query params are ignored, so the MCP `assignee` name must be mapped.
+    // Empty assignedTo selects unassigned conversations; omit the param for "any".
+    if (filters.assignee !== undefined && filters.assignee !== 'any') {
       if (filters.assignee === 'unassigned') {
-        params.append('assignee', 'null');
-      } else if (filters.assignee === 'any') {
-        // Don't add assignee filter
+        params.append('assignedTo', '');
       } else {
-        params.append('assignee', filters.assignee.toString());
+        params.append('assignedTo', filters.assignee.toString());
       }
     }
 
@@ -521,9 +521,9 @@ export class FreeScoutAPI {
     if (state) params.append('state', state);
     if (assignee !== undefined) {
       if (assignee === null) {
-        params.append('assignee', 'null');
+        params.append('assignedTo', '');
       } else {
-        params.append('assignee', assignee);
+        params.append('assignedTo', assignee);
       }
     }
 

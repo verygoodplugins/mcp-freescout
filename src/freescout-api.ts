@@ -422,9 +422,23 @@ export class FreeScoutAPI {
   ): Promise<FreeScoutApiResponse<FreeScoutConversation>> {
     const params = new URLSearchParams();
 
-    // Text search
-    if (filters.textSearch) {
-      params.append('query', filters.textSearch.trim());
+    // Subject search. FreeScout's list API has no body-level full-text search;
+    // the closest supported filter is `subject`. `textSearch` is kept as an
+    // alias, and the previously sent `query` param does not exist in the API
+    // (it was silently ignored), so it is dropped here.
+    const subject = filters.subject ?? filters.textSearch;
+    if (subject) {
+      params.append('subject', subject.trim());
+    }
+
+    // Customer email filter
+    if (filters.customerEmail) {
+      params.append('customerEmail', filters.customerEmail.trim());
+    }
+
+    // Ticket number lookup
+    if (filters.number != null) {
+      params.append('number', filters.number.toString());
     }
 
     // Assignee filter. FreeScout's list API uses `assignedTo`, not `assignee`.

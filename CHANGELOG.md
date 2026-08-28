@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0](https://github.com/verygoodplugins/mcp-freescout/compare/v3.0.1...v3.1.0) (2026-08-28)
+
+
+### Features
+
+* add subject/customerEmail/number search filters and fix textSearch ([#88](https://github.com/verygoodplugins/mcp-freescout/issues/88)) ([c038c40](https://github.com/verygoodplugins/mcp-freescout/commit/c038c40aa703c6398bcd51ced9fd6fd107324857))
+
+
+### Bug Fixes
+
+* honor FreeScout pageSize and read camelCase pagination keys ([#87](https://github.com/verygoodplugins/mcp-freescout/issues/87)) ([80da448](https://github.com/verygoodplugins/mcp-freescout/commit/80da44861276a976ae33c42c70f2361bd91c773b))
+* map search assignee filter to FreeScout assignedTo ([#86](https://github.com/verygoodplugins/mcp-freescout/issues/86)) ([faf3fe9](https://github.com/verygoodplugins/mcp-freescout/commit/faf3fe990c138fba1f1b2c41c41f4fe396df842a))
+
 ## [3.0.1](https://github.com/verygoodplugins/mcp-freescout/compare/v3.0.0...v3.0.1) (2026-08-14)
 
 

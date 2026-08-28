@@ -54,8 +54,8 @@ export const ConversationSchema = z.object({
 
 export const PageSchema = z.object({
   size: z.number(),
-  total_elements: z.number(),
-  total_pages: z.number(),
+  totalElements: z.number(),
+  totalPages: z.number(),
   number: z.number(),
 });
 
@@ -138,7 +138,7 @@ export interface FreeScoutRecipients {
 // Legacy interfaces (deprecated, use Zod schemas above)
 export interface FreeScoutPage {
   size: number;
-  total_elements: number;
-  total_pages: number;
+  totalElements: number;
+  totalPages: number;
   number: number;
 }

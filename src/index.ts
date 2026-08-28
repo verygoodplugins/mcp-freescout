@@ -412,9 +412,9 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
 
       const output = {
         conversations: conversationsWithPreview,
-        totalCount: results.page?.total_elements || 0,
+        totalCount: results.page?.totalElements ?? 0,
         page: results.page?.number,
-        totalPages: results.page?.total_pages,
+        totalPages: results.page?.totalPages,
       };
 
       return {

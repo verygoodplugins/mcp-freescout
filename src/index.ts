@@ -5,7 +5,11 @@ import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
-import { resolveDraftReplyRecipients, shouldInheritDraftRecipients } from './draft-recipients.js';
+import {
+  deriveInheritedRecipients,
+  resolveDraftReplyRecipients,
+  shouldInheritDraftRecipients,
+} from './draft-recipients.js';
 import { FreeScoutAPI } from './freescout-api.js';
 import { installStdioLifecycle, type StdioLifecycle } from './stdio-lifecycle.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
@@ -248,12 +252,8 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       let inheritedRecipients: FreeScoutRecipients = {};
       if (shouldInheritDraftRecipients(requestedRecipients)) {
         try {
-          const conversation = await api.getConversation(ticketId, false);
-          inheritedRecipients = {
-            to: conversation.to,
-            cc: conversation.cc,
-            bcc: conversation.bcc,
-          };
+          const conversation = await api.getConversation(ticketId, true);
+          inheritedRecipients = deriveInheritedRecipients(conversation);
         } catch {
           recipientWarning =
             'Unable to load existing recipients, so FreeScout default recipients were used for omitted fields.';

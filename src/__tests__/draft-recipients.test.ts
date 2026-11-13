@@ -142,6 +142,43 @@ describe('inherited recipient derivation', () => {
     expect(deriveInheritedRecipients(conversation).to).toEqual(['latest@customer.example']);
   });
 
+  it('ignores unsent or deleted outbound threads', () => {
+    const conversation = buildConversation({
+      _embedded: {
+        threads: [
+          { id: 1, type: 'message', state: 'published', to: ['sent@example.com'] },
+          { id: 2, type: 'message', state: 'draft', to: ['draft@example.com'] },
+          { id: 3, type: 'message', state: 'deleted', to: ['deleted@example.com'] },
+        ],
+      },
+    });
+    expect(deriveInheritedRecipients(conversation).to).toEqual(['sent@example.com']);
+  });
+
+  it('retains current conversation CC and BCC when a later reply changed them', () => {
+    const conversation = buildConversation({
+      cc: ['new@example.com'],
+      bcc: [],
+      _embedded: {
+        threads: [
+          {
+            id: 1,
+            type: 'message',
+            to: ['sent@example.com'],
+            cc: ['old@example.com'],
+            bcc: ['old-bcc@example.com'],
+          },
+          { id: 2, type: 'customer' },
+        ],
+      },
+    });
+    expect(deriveInheritedRecipients(conversation)).toEqual({
+      to: ['sent@example.com'],
+      cc: ['new@example.com'],
+      bcc: [],
+    });
+  });
+
   it('ignores outbound replies that address no one', () => {
     const conversation = buildConversation({
       to: ['conversation@customer.example'],

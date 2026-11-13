@@ -10,8 +10,9 @@ export function shouldInheritDraftRecipients(recipients: FreeScoutRecipients): b
  * Recipients a draft reply should inherit when the caller omits `to`/`cc`/`bcc`.
  *
  * A reply continues an existing exchange, so the most reliable default is the
- * recipient set of the latest *outbound* reply (a thread of type `message`)
- * that actually addressed someone. FreeScout keeps a single customer per
+ * TO address of the latest published outbound reply (a `message` thread)
+ * that actually addressed someone. Current conversation CC and BCC take
+ * precedence so later recipient changes are preserved. FreeScout keeps a single customer per
  * conversation and stores an empty `to` on the conversation itself for inbound
  * tickets, so inheriting `conversation.to` never populates `to`: FreeScout then
  * re-addresses the draft to the conversation's customer. When a ticket is
@@ -19,7 +20,7 @@ export function shouldInheritDraftRecipients(recipients: FreeScoutRecipients): b
  * mailbox), that customer is not the person the team has been replying to, and
  * the real recipient is dropped from both TO and CC.
  *
- * Falling back to the last outbound reply's recipients keeps the draft on the
+ * Falling back to the last outbound reply's TO address keeps the draft on the
  * same thread the team already established. When the ticket has no outbound
  * reply yet (first response, or notes only), we fall back to the conversation
  * recipients, preserving the previous behaviour for that case.
@@ -34,14 +35,19 @@ export function deriveInheritedRecipients(
   const threads = conversation._embedded?.threads ?? [];
 
   const lastOutboundReply = threads
-    .filter((thread) => thread.type === 'message' && (thread.to?.length ?? 0) > 0)
+    .filter(
+      (thread) =>
+        thread.type === 'message' &&
+        (thread.state === undefined || thread.state === 'published') &&
+        (thread.to?.length ?? 0) > 0
+    )
     .sort((a, b) => b.id - a.id)[0];
 
   if (lastOutboundReply) {
     return {
       to: lastOutboundReply.to,
-      cc: lastOutboundReply.cc,
-      bcc: lastOutboundReply.bcc,
+      cc: conversation.cc ?? lastOutboundReply.cc,
+      bcc: conversation.bcc ?? lastOutboundReply.bcc,
     };
   }
 

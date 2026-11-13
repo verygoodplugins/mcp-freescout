@@ -63,11 +63,10 @@ async function execute(
 }
 
 describe('buildServer', () => {
-  it('validates required configuration before opening the stdio entry', async () => {
+  it('opens the stdio entry without FreeScout credentials', async () => {
     const [, serverTransport] = InMemoryTransport.createLinkedPair();
-    vi.stubEnv('FREESCOUT_URL', 'https://example.invalid');
-    vi.stubEnv('FREESCOUT_API_KEY', 'test-only-key');
-    vi.stubEnv('FREESCOUT_DEFAULT_USER_ID', '12');
+    vi.stubEnv('FREESCOUT_URL', '');
+    vi.stubEnv('FREESCOUT_API_KEY', '');
 
     const lifecycle = startStdioServer({ transport: serverTransport });
     await lifecycle.close();
@@ -130,6 +129,91 @@ describe('buildServer', () => {
       'Thanks for the report.',
       7,
       conversation.to ? { to: conversation.to, cc: conversation.cc, bcc: conversation.bcc } : {}
+    );
+  });
+});
+
+describe('buildServer without FreeScout credentials', () => {
+  const missingMessage =
+    'Missing required environment variables: FREESCOUT_URL and FREESCOUT_API_KEY';
+
+  beforeEach(() => {
+    // Empty values keep dotenv from filling them in from a local .env file.
+    vi.stubEnv('FREESCOUT_URL', '');
+    vi.stubEnv('FREESCOUT_API_KEY', '');
+    vi.stubEnv('FREESCOUT_DEFAULT_USER_ID', '1');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('builds the server and registers all eight tools', () => {
+    const tools = registeredTools(buildServer());
+
+    expect(Object.keys(tools)).toHaveLength(8);
+  });
+
+  it.each([
+    ['freescout_get_ticket', { ticket: '123' }],
+    ['freescout_analyze_ticket', { ticket: '123' }],
+    ['freescout_add_note', { ticket: '123', note: 'Investigating' }],
+    ['freescout_update_ticket', { ticket: '123', status: 'closed' }],
+    ['freescout_create_draft_reply', { ticket: '123', replyText: 'Hello' }],
+    ['freescout_get_ticket_context', { ticket: '123' }],
+    ['freescout_search_tickets', { subject: 'checkout' }],
+    ['freescout_get_mailboxes', {}],
+  ])('reports the missing variables when %s is called', async (name, args) => {
+    const tools = registeredTools(buildServer());
+
+    await expect(execute(tools, name, args)).rejects.toThrow(missingMessage);
+  });
+
+  it('does not log credential values in the missing-variables error', async () => {
+    vi.stubEnv('FREESCOUT_API_KEY', 'secret-test-key');
+    const tools = registeredTools(buildServer());
+
+    const error = await execute(tools, 'freescout_get_mailboxes', {}).catch((e: Error) => e);
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).not.toContain('secret-test-key');
+  });
+
+  it('uses the credentials once they are available on a later tool call', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify([{ id: 4, name: 'Support' }]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const tools = registeredTools(buildServer());
+
+    await expect(execute(tools, 'freescout_get_mailboxes', {})).rejects.toThrow(missingMessage);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    vi.stubEnv('FREESCOUT_URL', 'https://support.example.invalid');
+    vi.stubEnv('FREESCOUT_API_KEY', 'test-only-key');
+
+    await expect(execute(tools, 'freescout_get_mailboxes', {})).resolves.toMatchObject({
+      content: [{ type: 'text' }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String((fetchMock.mock.calls as unknown[][])[0][0])).toBe(
+      'https://support.example.invalid/api/mailboxes'
+    );
+  });
+
+  it('validates FREESCOUT_DEFAULT_USER_ID when a tool is called, not when building', async () => {
+    vi.stubEnv('FREESCOUT_URL', 'https://support.example.invalid');
+    vi.stubEnv('FREESCOUT_API_KEY', 'test-only-key');
+    vi.stubEnv('FREESCOUT_DEFAULT_USER_ID', 'abc');
+    const tools = registeredTools(buildServer());
+
+    await expect(execute(tools, 'freescout_get_mailboxes', {})).rejects.toThrow(
+      'FREESCOUT_DEFAULT_USER_ID must be a positive integer'
     );
   });
 });

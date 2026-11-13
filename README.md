@@ -530,6 +530,10 @@ npm run build
 | `FREESCOUT_URL`     | Your FreeScout instance URL | `https://support.example.com` |
 | `FREESCOUT_API_KEY` | FreeScout API key           | `your-api-key-here`           |
 
+The server starts and lists its tools without these variables. They are checked
+when a tool is called, and a call made without them returns an error that names
+the missing variables.
+
 ### Optional Environment Variables
 
 | Variable                    | Description                     | Default |

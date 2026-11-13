@@ -89,6 +89,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_get_ticket',
     {
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
       title: 'Get FreeScout Ticket',
       description: 'Fetch and analyze a FreeScout ticket by ID or URL',
       inputSchema: z.object({
@@ -114,6 +115,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_analyze_ticket',
     {
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
       title: 'Analyze FreeScout Ticket',
       description:
         'Analyze a FreeScout ticket to determine issue type, root cause, and suggested solution',
@@ -137,6 +139,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_add_note',
     {
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
       title: 'Add Note to Ticket',
       description: 'Add an internal note to a FreeScout ticket',
       inputSchema: z.object({
@@ -168,6 +171,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_update_ticket',
     {
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
       title: 'Update Ticket Status/Assignment',
       description: 'Update ticket status and/or assignment',
       inputSchema: z.object({
@@ -210,6 +214,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_create_draft_reply',
     {
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
       title: 'Create Draft Reply',
       description: 'Create a draft reply in FreeScout that can be edited before sending',
       inputSchema: z.object({
@@ -295,6 +300,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_get_ticket_context',
     {
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
       title: 'Get Ticket Context',
       description: 'Get ticket context and customer info to help draft personalized replies',
       inputSchema: z.object({
@@ -356,6 +362,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_search_tickets',
     {
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
       title: 'Search FreeScout Tickets',
       description:
         'Search for FreeScout tickets with explicit filter parameters. Text search is subject-only (FreeScout has no message-body full-text search): use subject (or its alias textSearch) to match the conversation subject, customerEmail to filter by the customer, and number to look up a single ticket. Use assignee: "unassigned" for unassigned tickets, or assignee: number for a specific user. Supports relative time filters like "7d", "24h". Use includeLastMessage: true to get a preview of the most recent message for each ticket.',
@@ -427,6 +434,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
   server.registerTool(
     'freescout_get_mailboxes',
     {
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
       title: 'Get Mailboxes',
       description: 'Get list of available mailboxes',
       inputSchema: z.object({}),

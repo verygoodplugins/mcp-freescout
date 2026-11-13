@@ -47,6 +47,7 @@ function createApi() {
 type RegisteredTool = {
   executor: (args: unknown, context: unknown) => Promise<Record<string, unknown>>;
   outputSchema?: unknown;
+  annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
 };
 
 function registeredTools(server: ReturnType<typeof buildServer>): Record<string, RegisteredTool> {
@@ -80,6 +81,22 @@ describe('buildServer', () => {
 
     expect(Object.keys(tools)).toHaveLength(8);
     expect(Object.values(tools).every((tool) => tool.outputSchema === undefined)).toBe(true);
+  });
+
+  it('declares safety hints matching each tool operation', () => {
+    const tools = registeredTools(buildServer({ api: createApi() as never }));
+    const writes = [
+      'freescout_add_note',
+      'freescout_update_ticket',
+      'freescout_create_draft_reply',
+    ];
+    for (const [name, tool] of Object.entries(tools)) {
+      expect(tool.annotations).toMatchObject({
+        readOnlyHint: !writes.includes(name),
+        destructiveHint: name === 'freescout_update_ticket',
+        openWorldHint: true,
+      });
+    }
   });
 
   it('preserves the eight tool behaviors and structured content where it is stable', async () => {

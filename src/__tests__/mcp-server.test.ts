@@ -65,6 +65,58 @@ async function execute(
 }
 
 describe('buildServer', () => {
+  it('reports Resource-ID for an empty 201 draft response', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 201, headers: { 'Resource-ID': '25' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const tools = registeredTools(
+        buildServer({ api: new FreeScoutAPI('https://example.invalid', 'test-key') })
+      );
+      const draft = await execute(tools, 'freescout_create_draft_reply', {
+        ticket: '123',
+        replyText: 'hello',
+        userId: 1,
+        to: [],
+        cc: [],
+        bcc: [],
+      });
+      expect(draft.structuredContent).toMatchObject({ success: true, draftId: 25 });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it('reports successful thread creation even if an empty response has no resource ID', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const tools = registeredTools(
+        buildServer({ api: new FreeScoutAPI('https://example.invalid', 'test-key') })
+      );
+      const note = await execute(tools, 'freescout_add_note', {
+        ticket: '123',
+        note: 'hello',
+        userId: 1,
+      });
+      const draft = await execute(tools, 'freescout_create_draft_reply', {
+        ticket: '123',
+        replyText: 'hello',
+        userId: 1,
+        to: [],
+        cc: [],
+        bcc: [],
+      });
+      expect(note.structuredContent).toMatchObject({ success: true });
+      expect(draft.structuredContent).toMatchObject({ success: true });
+      expect(JSON.stringify(draft)).toMatch(/ID.*(?:unavailable|not returned)/i);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('omits default-embedded threads from ticket results when requested', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(conversation))));
     try {

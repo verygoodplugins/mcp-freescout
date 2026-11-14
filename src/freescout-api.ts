@@ -13,6 +13,38 @@ interface RetryOptions {
   timeout?: number;
 }
 
+type CreatedThread = Omit<FreeScoutThread, 'id'> & { id?: number };
+
+async function parseCreatedThread(response: Response): Promise<CreatedThread> {
+  const text = await response.text();
+  let value: unknown = {};
+  if (text.trim()) {
+    try {
+      value = JSON.parse(text);
+    } catch (error) {
+      throw new SyntaxError(
+        'FreeScout confirmed thread creation but returned malformed JSON; do not retry creation solely because of this error.',
+        { cause: error }
+      );
+    }
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(
+      'FreeScout confirmed thread creation but returned an invalid response; do not retry creation solely because of this error.'
+    );
+  }
+  const thread = value as CreatedThread;
+  const header = response.headers.get('Resource-ID');
+  const headerId = header && /^\d+$/.test(header) ? Number(header) : undefined;
+  const isUsableId = (id: unknown): id is number =>
+    typeof id === 'number' && Number.isSafeInteger(id) && id > 0;
+  if (isUsableId(thread.id)) return thread;
+  if (isUsableId(headerId)) return { ...thread, id: headerId };
+  const withoutId = { ...thread };
+  delete withoutId.id;
+  return withoutId;
+}
+
 export class FreeScoutAPI {
   private baseUrl: string;
   private apiKey: string;
@@ -280,8 +312,13 @@ export class FreeScoutAPI {
     return this.markdownToHtml(text);
   }
 
-  private async request<T>(path: string, method: string = 'GET', body?: unknown): Promise<T> {
-    return this.retryWithBackoff(async () => {
+  private async request<T>(
+    path: string,
+    method: string = 'GET',
+    body?: unknown,
+    parseCreated?: (response: Response) => Promise<T>
+  ): Promise<T> {
+    const result = await this.retryWithBackoff(async () => {
       const url = `${this.baseUrl}/api${path}`;
 
       const headers: Record<string, string> = {
@@ -320,13 +357,10 @@ export class FreeScoutAPI {
           throw new Error(`FreeScout API error: ${response.status} - ${errorText}`);
         }
 
-        // FreeScout returns 204 No Content for successful update operations.
-        // Do not attempt JSON parsing when the response intentionally has no body.
-        if (response.status === 204) {
-          return undefined as T;
+        if (method === 'GET' && response.status !== 204) {
+          return { kind: 'data' as const, data: (await response.json()) as T };
         }
-
-        return response.json() as Promise<T>;
+        return { kind: 'response' as const, response };
       } catch (error: unknown) {
         clearTimeout(timeoutId);
 
@@ -339,6 +373,13 @@ export class FreeScoutAPI {
         throw error;
       }
     });
+    if (result.kind === 'data') return result.data;
+    // Write response parsing happens outside the retry loop: a successful
+    // write must not be repeated because its response is malformed or incomplete.
+    const { response } = result;
+    if (response.status === 204) return undefined as T;
+    if (response.status === 201 && parseCreated) return parseCreated(response);
+    return response.json() as Promise<T>;
   }
 
   async getConversation(
@@ -363,7 +404,7 @@ export class FreeScoutAPI {
     userId?: number,
     state?: 'draft' | 'published',
     recipients?: FreeScoutRecipients
-  ): Promise<FreeScoutThread> {
+  ): Promise<CreatedThread> {
     const formattedText = this.formatForFreeScoutEditor(text);
     const body: {
       type: 'note' | 'message' | 'customer';
@@ -398,7 +439,12 @@ export class FreeScoutAPI {
       body.bcc = recipients.bcc;
     }
 
-    return this.request<FreeScoutThread>(`/conversations/${ticketId}/threads`, 'POST', body);
+    return this.request<CreatedThread>(
+      `/conversations/${ticketId}/threads`,
+      'POST',
+      body,
+      parseCreatedThread
+    );
   }
 
   async createDraftReply(
@@ -406,7 +452,7 @@ export class FreeScoutAPI {
     text: string,
     userId: number,
     recipients?: FreeScoutRecipients
-  ): Promise<FreeScoutThread> {
+  ): Promise<CreatedThread> {
     return this.addThread(ticketId, 'message', text, userId, 'draft', recipients);
   }
 

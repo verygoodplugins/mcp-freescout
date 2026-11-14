@@ -261,6 +261,8 @@ Create a draft reply in FreeScout that can be edited before sending. This tool l
 
 If recipient fields are omitted, the server preserves the current conversation recipients from FreeScout when available. If FreeScout does not expose existing `to` recipients on the conversation, its normal default customer recipient behavior is preserved.
 
+The result includes `draftId` when FreeScout returns the new thread ID. If creation succeeds without an ID, `draftId` is `null`; the draft was still created and should not be retried solely to obtain its ID.
+
 **Markdown Support:**
 
 - **Bold text**: `**text**` or `__text__` → **text**

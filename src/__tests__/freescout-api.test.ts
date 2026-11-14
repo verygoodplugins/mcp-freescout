@@ -114,6 +114,24 @@ describe('FreeScoutAPI', () => {
       expect(result.id).toBe(123);
     });
 
+    it('retries a transient failure while reading a GET response body', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw new Error('ECONNRESET');
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => mockConversationResponse,
+        });
+      await expect(api.getConversation('123')).resolves.toMatchObject({ id: 123 });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
     it('should handle 404 errors gracefully', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

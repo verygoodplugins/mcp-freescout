@@ -318,7 +318,7 @@ export class FreeScoutAPI {
     body?: unknown,
     parseCreated?: (response: Response) => Promise<T>
   ): Promise<T> {
-    const response = await this.retryWithBackoff(async () => {
+    const result = await this.retryWithBackoff(async () => {
       const url = `${this.baseUrl}/api${path}`;
 
       const headers: Record<string, string> = {
@@ -357,7 +357,10 @@ export class FreeScoutAPI {
           throw new Error(`FreeScout API error: ${response.status} - ${errorText}`);
         }
 
-        return response;
+        if (method === 'GET' && response.status !== 204) {
+          return { kind: 'data' as const, data: (await response.json()) as T };
+        }
+        return { kind: 'response' as const, response };
       } catch (error: unknown) {
         clearTimeout(timeoutId);
 
@@ -370,8 +373,10 @@ export class FreeScoutAPI {
         throw error;
       }
     });
-    // Parsing happens outside the retry loop: a successful write must not be
-    // repeated because its response body is malformed or incomplete.
+    if (result.kind === 'data') return result.data;
+    // Write response parsing happens outside the retry loop: a successful
+    // write must not be repeated because its response is malformed or incomplete.
+    const { response } = result;
     if (response.status === 204) return undefined as T;
     if (response.status === 201 && parseCreated) return parseCreated(response);
     return response.json() as Promise<T>;

@@ -435,10 +435,38 @@ describe('FreeScoutAPI', () => {
   });
 
   describe('addThread', () => {
+    it('accepts an empty 201 and uses a valid Resource-ID without retrying', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(null, { status: 201, headers: { 'Resource-ID': '25' } })
+      );
+      await expect(api.createDraftReply('123', 'hello', 1)).resolves.toMatchObject({ id: 25 });
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves JSON bodies and accepts creation when the ID is unavailable', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 42, body: 'created' }), { status: 201 })
+      );
+      mockFetch.mockResolvedValueOnce(
+        new Response(null, { status: 201, headers: { 'Resource-ID': 'invalid' } })
+      );
+      await expect(api.createDraftReply('123', 'hello', 1)).resolves.toMatchObject({
+        id: 42,
+        body: 'created',
+      });
+      await expect(api.createDraftReply('123', 'hello', 1)).resolves.toEqual({});
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry a malformed nonempty successful creation response', async () => {
+      mockFetch.mockResolvedValue(new Response('{"id":503', { status: 201 }));
+      await expect(api.createDraftReply('123', 'hello', 1)).rejects.toThrow(SyntaxError);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
     it('should add a thread to a conversation', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => ({
           id: 456,
           type: 'note',
@@ -462,7 +490,7 @@ describe('FreeScoutAPI', () => {
     it('should include recipient fields when provided', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => ({
           id: 459,
           type: 'message',
@@ -488,7 +516,7 @@ describe('FreeScoutAPI', () => {
     it('should convert markdown to HTML for notes', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => ({
           id: 457,
           type: 'note',
@@ -509,7 +537,7 @@ describe('FreeScoutAPI', () => {
     it('should preserve raw HTML in notes', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => ({
           id: 458,
           type: 'note',
@@ -643,7 +671,7 @@ describe('FreeScoutAPI', () => {
     it('should handle basic markdown formatting', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => mockThreadResponse,
       });
 
@@ -659,7 +687,7 @@ describe('FreeScoutAPI', () => {
     it('should preserve underscores in inline code', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => mockThreadResponse,
       });
 
@@ -673,7 +701,7 @@ describe('FreeScoutAPI', () => {
     it('should handle fenced code blocks with language', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => mockThreadResponse,
       });
 
@@ -689,7 +717,7 @@ describe('FreeScoutAPI', () => {
     it('should not italicize underscores in fenced code blocks', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => mockThreadResponse,
       });
 
@@ -706,7 +734,7 @@ describe('FreeScoutAPI', () => {
     it('should handle mixed inline code and text with underscores', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        status: 201,
+        status: 200,
         json: async () => mockThreadResponse,
       });
 

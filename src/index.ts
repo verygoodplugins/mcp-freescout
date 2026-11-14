@@ -313,14 +313,14 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
         success: true,
         message: `Draft reply created successfully in FreeScout ticket #${ticketId}`,
         ticketId,
-        draftId: draftThread.id,
+        draftId: draftThread.id ?? null,
       };
 
       return {
         content: [
           {
             type: 'text',
-            text: `✅ ${output.message}\n\nDraft ID: ${draftThread.id}\n\nThe draft reply is now saved in FreeScout and can be reviewed, edited, and sent from the FreeScout interface.${recipientWarning ? `\n\nWarning: ${recipientWarning}` : ''}`,
+            text: `✅ ${output.message}\n\n${draftThread.id === undefined ? 'Draft ID was not returned by FreeScout.' : `Draft ID: ${draftThread.id}`}\n\nThe draft reply is now saved in FreeScout and can be reviewed, edited, and sent from the FreeScout interface.${recipientWarning ? `\n\nWarning: ${recipientWarning}` : ''}`,
           },
         ],
         structuredContent: output,

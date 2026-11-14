@@ -81,6 +81,10 @@
     {
       "name": "freescout_get_mailboxes",
       "description": "List available FreeScout mailboxes"
+    },
+    {
+      "name": "freescout_tags",
+      "description": "List, add, remove, or replace FreeScout ticket tags"
     }
   ],
   "keywords": [

@@ -3,6 +3,7 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { vi } from 'vitest';
 import { buildServer, startStdioServer } from '../index.js';
 import { FreeScoutAPI } from '../freescout-api.js';
+import { ThreadSchema } from '../types.js';
 
 const conversation = {
   id: 123,
@@ -81,6 +82,9 @@ describe('buildServer', () => {
         },
       } as never);
       const tools = registeredTools(buildServer({ api }));
+      expect(ThreadSchema.parse({ id: 1, [dateField]: '2026-10-21T10:00:00Z' })).toHaveProperty(
+        dateField
+      );
       const context = await execute(tools, 'freescout_get_ticket_context', { ticket: '123' });
       const contextData = JSON.parse((context.content as Array<{ text: string }>)[0].text);
       expect(contextData.customerMessages).toEqual([
@@ -123,6 +127,21 @@ describe('buildServer', () => {
     const tools = registeredTools(buildServer({ api }));
     await execute(tools, 'freescout_search_tickets', { includeLastMessage: false });
     expect(api.getConversation).not.toHaveBeenCalled();
+  });
+
+  it('reports when the context limit omits team messages', async () => {
+    const api = createApi();
+    api.getConversation.mockResolvedValue({
+      ...conversation,
+      _embedded: {
+        threads: Array.from({ length: 4 }, (_, id) => ({ id, type: 'note', body: `Note ${id}` })),
+      },
+    } as never);
+    const tools = registeredTools(buildServer({ api }));
+    const result = await execute(tools, 'freescout_get_ticket_context', { ticket: '123' });
+    const output = JSON.parse((result.content as Array<{ text: string }>)[0].text);
+    expect(output.teamMessages).toHaveLength(3);
+    expect(output.teamMessagesOmittedCount).toBe(1);
   });
   it('reports Resource-ID for an empty 201 draft response', async () => {
     const fetchMock = vi
@@ -203,11 +222,11 @@ describe('buildServer', () => {
     vi.unstubAllEnvs();
   });
 
-  it('registers the eight tools without declared output schemas', () => {
+  it('registers the nine tools without declared output schemas', () => {
     const server = buildServer({ api: createApi() as never });
     const tools = registeredTools(server);
 
-    expect(Object.keys(tools)).toHaveLength(8);
+    expect(Object.keys(tools)).toHaveLength(9);
     expect(Object.values(tools).every((tool) => tool.outputSchema === undefined)).toBe(true);
   });
 
@@ -217,11 +236,12 @@ describe('buildServer', () => {
       'freescout_add_note',
       'freescout_update_ticket',
       'freescout_create_draft_reply',
+      'freescout_tags',
     ];
     for (const [name, tool] of Object.entries(tools)) {
       expect(tool.annotations).toMatchObject({
         readOnlyHint: !writes.includes(name),
-        destructiveHint: name === 'freescout_update_ticket',
+        destructiveHint: name === 'freescout_update_ticket' || name === 'freescout_tags',
         openWorldHint: true,
       });
     }
@@ -294,10 +314,10 @@ describe('buildServer without FreeScout credentials', () => {
     vi.unstubAllGlobals();
   });
 
-  it('builds the server and registers all eight tools', () => {
+  it('builds the server and registers all nine tools', () => {
     const tools = registeredTools(buildServer());
 
-    expect(Object.keys(tools)).toHaveLength(8);
+    expect(Object.keys(tools)).toHaveLength(9);
   });
 
   it.each([
@@ -309,6 +329,7 @@ describe('buildServer without FreeScout credentials', () => {
     ['freescout_get_ticket_context', { ticket: '123' }],
     ['freescout_search_tickets', { subject: 'checkout' }],
     ['freescout_get_mailboxes', {}],
+    ['freescout_tags', { action: 'list' }],
   ])('reports the missing variables when %s is called', async (name, args) => {
     const tools = registeredTools(buildServer());
 

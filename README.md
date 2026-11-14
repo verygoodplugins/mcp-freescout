@@ -309,6 +309,8 @@ Get ticket context and customer information to help craft personalized replies.
 - Recent customer and team messages
 - Analysis results (bug vs feature vs third-party issue)
 
+Thread dates accept FreeScout's `createdAt` and the legacy `created_at` spelling. Messages without a usable timestamp remain in context with `date: null`; `teamMessagesOmittedCount` reports when the three-message context limit excludes entries. When a search preview encounters undated customer or agent messages, `undatedMessageCount` indicates that its dated `lastMessage` may not be the most recent.
+
 #### `freescout_search_tickets`
 
 Search for tickets across your FreeScout instance.
@@ -338,6 +340,7 @@ Search for tickets across your FreeScout instance.
 - `mailboxId` (optional): Filter by specific mailbox ID
 - `updatedSince` (optional): ISO date or relative time like "7d", "24h", "30m"
 - `createdSince` (optional): ISO date or relative time
+- `tag` (optional): Filter by a FreeScout tag name (requires the Tags module)
 - `page` (optional): Page number for pagination (min: 1)
 - `pageSize` (optional): Results per page (min: 1, max: 100)
 
@@ -363,6 +366,22 @@ None
 - "List the mailboxes in FreeScout"
 - "What mailboxes are configured?"
 - "Get mailbox information"
+
+#### `freescout_tags`
+
+List tags or manage the tags on a ticket. This tool requires FreeScout's Tags module and is marked as potentially destructive because it can replace or clear tags.
+
+- `action`: `list`, `add`, `remove`, or `replace`.
+- `ticket`: ticket ID, number, or URL; required for updates and optional for listing. Without it, `list` returns global tags.
+- `tags`: tag names for an update. `replace` with `[]` clears the ticket's tags; `add` and `remove` require at least one name.
+- `page` and `pageSize`: optional for `list` only; `pageSize` is at most 100.
+
+Add and remove first read every page of the ticket's tags and refuse to write if the list is incomplete. FreeScout replaces the full list without a conditional update, so concurrent changes made between the read and write can still be overwritten. Replacing with an unknown tag name creates that tag in FreeScout.
+
+```javascript
+await mcp.callTool('freescout_tags', { action: 'add', ticket: '12345', tags: ['urgent'] });
+await mcp.callTool('freescout_search_tickets', { tag: 'urgent', status: 'active' });
+```
 
 ## Workflow Examples
 

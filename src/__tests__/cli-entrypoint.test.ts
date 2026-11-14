@@ -151,8 +151,16 @@ it('answers initialize and tools/list without FreeScout credentials, then report
 
     const listed = await request(2, 'tools/list', {});
     const tools = (listed.result as { tools: { name: string }[] }).tools.map((tool) => tool.name);
-    expect(tools).toHaveLength(8);
+    expect(tools).toHaveLength(9);
+    expect(tools).toContain('freescout_tags');
     expect(tools).toContain('freescout_get_mailboxes');
+
+    const invalidTags = await request(4, 'tools/call', {
+      name: 'freescout_tags',
+      arguments: { action: 'replace', ticket: '123' },
+    });
+    expect(invalidTags).toMatchObject({ result: { isError: true } });
+    expect(JSON.stringify(invalidTags)).toContain('tags are required');
 
     const called = await request(3, 'tools/call', {
       name: 'freescout_get_mailboxes',

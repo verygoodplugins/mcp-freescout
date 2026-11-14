@@ -13,7 +13,12 @@ import {
 import { FreeScoutAPI } from './freescout-api.js';
 import { installStdioLifecycle, type StdioLifecycle } from './stdio-lifecycle.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { SearchFiltersSchema, type FreeScoutRecipients, type FreeScoutThread } from './types.js';
+import {
+  SearchFiltersSchema,
+  TagToolInputSchema,
+  type FreeScoutRecipients,
+  type FreeScoutThread,
+} from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -26,9 +31,11 @@ type FreeScoutApiPort = Pick<
   | 'createDraftReply'
   | 'getConversation'
   | 'getMailboxes'
+  | 'listTags'
   | 'parseTicketInput'
   | 'searchConversations'
   | 'updateConversation'
+  | 'updateTags'
 >;
 
 type TicketAnalyzerPort = Pick<TicketAnalyzer, 'analyzeConversation' | 'stripHtml'>;
@@ -381,6 +388,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
             return stripped.substring(0, 300) + (stripped.length > 300 ? '...' : '');
           })(),
         })),
+        ...(teamMessages.length > 3 ? { teamMessagesOmittedCount: teamMessages.length - 3 } : {}),
         analysis: {
           isBug: analysis.isBug,
           isThirdPartyIssue: analysis.isThirdPartyIssue,
@@ -425,7 +433,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
               const undatedMessageCount = messages.filter((t) => !threadTimestamp(t)).length;
               const datedMessages = messages.filter((t) => threadTimestamp(t));
 
-              // Sort by created_at descending and get the most recent
+              // Sort by normalized timestamp descending and get the most recent.
               const sortedMessages = datedMessages.sort((a, b) => {
                 const dateA = Date.parse(threadTimestamp(a)!);
                 const dateB = Date.parse(threadTimestamp(b)!);
@@ -485,6 +493,36 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
 
       return {
         content: [{ type: 'text', text: JSON.stringify(mailboxes, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
+    'freescout_tags',
+    {
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+      title: 'Manage FreeScout Tags',
+      description:
+        'List tags globally or on a ticket; add, remove, or replace ticket tags. Replace with an empty list clears all tags. Add/remove read the full existing tag list first; concurrent tag changes may be overwritten.',
+      inputSchema: TagToolInputSchema,
+    },
+    async ({ action, ticket, tags, page, pageSize }) => {
+      const { api } = runtime();
+      const ticketId = ticket ? api.parseTicketInput(ticket) : undefined;
+      let output: Record<string, unknown>;
+      if (action === 'list') {
+        output = {
+          action,
+          ticketId: ticketId ?? null,
+          data: await api.listTags({ ticketId, page, pageSize }),
+        };
+      } else {
+        if (!ticketId || !tags) throw new Error('ticket and tags are required for tag updates');
+        output = { action, ticketId, tags: await api.updateTags(ticketId, action, tags) };
+      }
+      return {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
       };
     }
   );

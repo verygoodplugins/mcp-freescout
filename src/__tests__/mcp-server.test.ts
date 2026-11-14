@@ -2,6 +2,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { vi } from 'vitest';
 import { buildServer, startStdioServer } from '../index.js';
+import { FreeScoutAPI } from '../freescout-api.js';
 
 const conversation = {
   id: 123,
@@ -64,6 +65,22 @@ async function execute(
 }
 
 describe('buildServer', () => {
+  it('omits default-embedded threads from ticket results when requested', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(conversation))));
+    try {
+      const api = new FreeScoutAPI('https://example.invalid', 'test-key');
+      const tools = registeredTools(buildServer({ api }));
+      const result = await execute(tools, 'freescout_get_ticket', {
+        ticket: '123',
+        includeThreads: false,
+      });
+      const output = JSON.parse((result.content as Array<{ text: string }>)[0].text);
+      expect(output._embedded).not.toHaveProperty('threads');
+      expect(output._embedded.customer).toEqual(conversation._embedded.customer);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('opens the stdio entry without FreeScout credentials', async () => {
     const [, serverTransport] = InMemoryTransport.createLinkedPair();
     vi.stubEnv('FREESCOUT_URL', '');

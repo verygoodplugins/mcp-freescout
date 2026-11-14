@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server for FreeScout helpdesk ticket management. This server provides tools to interact with FreeScout tickets, analyze issues, and manage customer responses.
 
+[![mcp.market](https://mcp.market/badge/verygoodplugins-mcp-freescout.svg)](https://mcp.market/server/verygoodplugins-mcp-freescout)
+
 ## Features
 
 - 🎫 **Ticket Management**: Fetch, analyze, and update FreeScout tickets

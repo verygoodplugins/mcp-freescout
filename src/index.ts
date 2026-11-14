@@ -13,7 +13,7 @@ import {
 import { FreeScoutAPI } from './freescout-api.js';
 import { installStdioLifecycle, type StdioLifecycle } from './stdio-lifecycle.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
+import { SearchFiltersSchema, type FreeScoutRecipients, type FreeScoutThread } from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -80,8 +80,14 @@ type ThreadType = 'customer' | 'message' | 'note';
 const isValidThreadType = (type: unknown): type is ThreadType =>
   typeof type === 'string' && allowedThreadTypes.has(type as ThreadType);
 
-const hasCreatedAt = (createdAt: unknown): createdAt is string =>
-  typeof createdAt === 'string' && createdAt.length > 0;
+const threadTimestamp = (thread: FreeScoutThread): string | null => {
+  for (const value of [thread.createdAt, thread.created_at]) {
+    if (typeof value === 'string' && value.length > 0 && Number.isFinite(Date.parse(value))) {
+      return value;
+    }
+  }
+  return null;
+};
 
 const normalizeThreadBody = (body: unknown) => (typeof body === 'string' ? body : '');
 
@@ -346,9 +352,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       const analysis = analyzer.analyzeConversation(conversation);
 
       const threads = conversation._embedded?.threads || [];
-      const safeThreads = threads.filter(
-        (t) => isValidThreadType(t.type) && hasCreatedAt(t.created_at)
-      );
+      const safeThreads = threads.filter((t) => isValidThreadType(t.type));
       const customerMessages = safeThreads.filter((t) => t.type === 'customer');
       const teamMessages = safeThreads.filter((t) => t.type === 'message' || t.type === 'note');
 
@@ -362,7 +366,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
         status: conversation.status,
         issueDescription: analysis.issueDescription,
         customerMessages: customerMessages.map((m) => ({
-          date: m.created_at,
+          date: threadTimestamp(m),
           content: (() => {
             const body = normalizeThreadBody(m.body);
             const stripped = analyzer.stripHtml(body);
@@ -370,7 +374,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
           })(),
         })),
         teamMessages: teamMessages.slice(-3).map((m) => ({
-          date: m.created_at,
+          date: threadTimestamp(m),
           content: (() => {
             const body = normalizeThreadBody(m.body);
             const stripped = analyzer.stripHtml(body);
@@ -417,14 +421,14 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
               const threads = fullConv._embedded?.threads || [];
 
               // Filter to actual messages (customer or message type, not notes)
-              const messages = threads
-                .filter((t) => t.type === 'customer' || t.type === 'message')
-                .filter((t) => hasCreatedAt(t.created_at));
+              const messages = threads.filter((t) => t.type === 'customer' || t.type === 'message');
+              const undatedMessageCount = messages.filter((t) => !threadTimestamp(t)).length;
+              const datedMessages = messages.filter((t) => threadTimestamp(t));
 
               // Sort by created_at descending and get the most recent
-              const sortedMessages = messages.sort((a, b) => {
-                const dateA = new Date(a.created_at || 0).getTime();
-                const dateB = new Date(b.created_at || 0).getTime();
+              const sortedMessages = datedMessages.sort((a, b) => {
+                const dateA = Date.parse(threadTimestamp(a)!);
+                const dateB = Date.parse(threadTimestamp(b)!);
                 return dateB - dateA;
               });
 
@@ -436,13 +440,15 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
 
                 return {
                   ...conv,
+                  ...(undatedMessageCount > 0 ? { undatedMessageCount } : {}),
                   lastMessage: {
                     type: lastMessage.type,
-                    date: lastMessage.created_at,
+                    date: threadTimestamp(lastMessage),
                     preview,
                   },
                 };
               }
+              if (undatedMessageCount > 0) return { ...conv, undatedMessageCount };
             } catch {
               // If fetching threads fails, just return the conversation without preview
             }

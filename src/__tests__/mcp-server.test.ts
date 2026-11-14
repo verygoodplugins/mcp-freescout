@@ -65,6 +65,65 @@ async function execute(
 }
 
 describe('buildServer', () => {
+  it.each(['createdAt', 'created_at'])(
+    'uses %s timestamps for ticket context and the latest preview',
+    async (dateField) => {
+      const api = createApi();
+      api.getConversation.mockResolvedValue({
+        ...conversation,
+        _embedded: {
+          ...conversation._embedded,
+          threads: [
+            { id: 202, type: 'message', body: 'Latest reply', [dateField]: '2026-10-21T10:02:00Z' },
+            { id: 201, type: 'customer', body: 'Question', [dateField]: '2026-10-21T10:00:00Z' },
+            { id: 203, type: 'note', body: 'Call details', [dateField]: '2026-10-21T10:01:00Z' },
+          ],
+        },
+      } as never);
+      const tools = registeredTools(buildServer({ api }));
+      const context = await execute(tools, 'freescout_get_ticket_context', { ticket: '123' });
+      const contextData = JSON.parse((context.content as Array<{ text: string }>)[0].text);
+      expect(contextData.customerMessages).toEqual([
+        { date: '2026-10-21T10:00:00Z', content: 'Question' },
+      ]);
+      expect(contextData.teamMessages).toHaveLength(2);
+      const search = await execute(tools, 'freescout_search_tickets', { includeLastMessage: true });
+      const searchData = JSON.parse((search.content as Array<{ text: string }>)[0].text);
+      expect(searchData.conversations[0].lastMessage).toMatchObject({
+        date: '2026-10-21T10:02:00Z',
+        preview: 'Latest reply',
+      });
+    }
+  );
+
+  it('preserves undated messages and identifies incomplete last-message previews', async () => {
+    const api = createApi();
+    api.getConversation.mockResolvedValue({
+      ...conversation,
+      _embedded: {
+        threads: [
+          { id: 1, type: 'customer', body: 'No date' },
+          { id: 2, type: 'message', body: 'Dated reply', createdAt: '2026-10-21T10:00:00Z' },
+        ],
+      },
+    } as never);
+    const tools = registeredTools(buildServer({ api }));
+    const context = await execute(tools, 'freescout_get_ticket_context', { ticket: '123' });
+    expect(
+      JSON.parse((context.content as Array<{ text: string }>)[0].text).customerMessages
+    ).toEqual([{ date: null, content: 'No date' }]);
+    const search = await execute(tools, 'freescout_search_tickets', { includeLastMessage: true });
+    expect(
+      JSON.parse((search.content as Array<{ text: string }>)[0].text).conversations[0]
+    ).toMatchObject({ undatedMessageCount: 1, lastMessage: { preview: 'Dated reply' } });
+  });
+
+  it('does not fetch ticket details when last-message previews are disabled', async () => {
+    const api = createApi();
+    const tools = registeredTools(buildServer({ api }));
+    await execute(tools, 'freescout_search_tickets', { includeLastMessage: false });
+    expect(api.getConversation).not.toHaveBeenCalled();
+  });
   it('reports Resource-ID for an empty 201 draft response', async () => {
     const fetchMock = vi
       .fn()

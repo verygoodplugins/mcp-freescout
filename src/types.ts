@@ -15,6 +15,7 @@ export const ThreadSchema = z.object({
   state: z.string().optional(),
   body: z.string().optional(),
   created_by_customer: z.boolean().optional(),
+  createdAt: z.string().optional(),
   created_at: z.string().optional(),
   to: z.array(z.string()).optional(),
   cc: z.array(z.string()).optional(),

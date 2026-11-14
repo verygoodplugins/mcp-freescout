@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1](https://github.com/verygoodplugins/mcp-freescout/compare/v3.2.0...v3.2.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ci:** forward Dependabot app credentials ([#133](https://github.com/verygoodplugins/mcp-freescout/issues/133)) ([63f3226](https://github.com/verygoodplugins/mcp-freescout/commit/63f3226efe286841112e6d3a44e7875127178359))
+* **release:** wait for npm registry propagation ([#131](https://github.com/verygoodplugins/mcp-freescout/issues/131)) ([8c12197](https://github.com/verygoodplugins/mcp-freescout/commit/8c12197f8aace0c741805b6f48b5537e7ced0bc2))
+
 ## [3.2.0](https://github.com/verygoodplugins/mcp-freescout/compare/v3.1.0...v3.2.0) (2026-11-14)
 
 

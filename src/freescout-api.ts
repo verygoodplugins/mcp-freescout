@@ -5,6 +5,7 @@ import type {
   FreeScoutThread,
   SearchFilters,
 } from './types.js';
+import { TagPageSchema } from './types.js';
 
 interface RetryOptions {
   maxRetries?: number;
@@ -489,6 +490,8 @@ export class FreeScoutAPI {
       params.append('customerEmail', filters.customerEmail.trim());
     }
 
+    if (filters.tag) params.append('tag', filters.tag);
+
     // Ticket number lookup
     if (filters.number != null) {
       params.append('number', filters.number.toString());
@@ -553,6 +556,66 @@ export class FreeScoutAPI {
     return this.request<FreeScoutApiResponse<FreeScoutConversation>>(
       `/conversations?${params.toString()}`
     );
+  }
+
+  async listTags(
+    options: { ticketId?: string; page?: number; pageSize?: number } = {}
+  ): Promise<unknown> {
+    const params = new URLSearchParams();
+    if (options.ticketId !== undefined) params.set('conversationId', options.ticketId);
+    if (options.page !== undefined) params.set('page', String(options.page));
+    if (options.pageSize !== undefined) params.set('pageSize', String(options.pageSize));
+    const query = params.toString();
+    return this.request<unknown>(`/tags${query ? `?${query}` : ''}`);
+  }
+
+  async updateTags(
+    ticketId: string,
+    action: 'add' | 'remove' | 'replace',
+    requested: string[]
+  ): Promise<string[]> {
+    let tags: string[];
+    if (action === 'replace') {
+      tags = [...new Set(requested)];
+    } else {
+      const existing: string[] = [];
+      let totalPages: number | undefined;
+      let totalElements: number | undefined;
+      let page = 1;
+      do {
+        const result = TagPageSchema.safeParse(
+          await this.listTags({ ticketId, page, pageSize: 100 })
+        );
+        if (!result.success)
+          throw new Error('Cannot update tags: FreeScout returned incomplete tag pagination.');
+        const data = result.data;
+        if (
+          data.page.number !== page ||
+          (totalPages !== undefined && data.page.totalPages !== totalPages) ||
+          (totalElements !== undefined && data.page.totalElements !== totalElements)
+        ) {
+          throw new Error('Cannot update tags: FreeScout tag pagination changed while reading.');
+        }
+        totalPages = data.page.totalPages;
+        totalElements = data.page.totalElements;
+        existing.push(...data._embedded.tags.map((tag) => tag.name));
+        page++;
+      } while (page <= totalPages);
+      if (
+        existing.length !== totalElements ||
+        (totalPages === 0 && totalElements !== 0) ||
+        new Set(existing).size !== existing.length
+      ) {
+        throw new Error('Cannot update tags: FreeScout returned an incomplete tag list.');
+      }
+      const selected = new Set(requested);
+      tags =
+        action === 'add'
+          ? [...new Set([...existing, ...requested])]
+          : existing.filter((tag) => !selected.has(tag));
+    }
+    await this.request<unknown>(`/conversations/${ticketId}/tags`, 'PUT', { tags });
+    return tags;
   }
 
   /**

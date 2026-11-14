@@ -15,6 +15,7 @@ export const ThreadSchema = z.object({
   state: z.string().optional(),
   body: z.string().optional(),
   created_by_customer: z.boolean().optional(),
+  createdAt: z.string().optional(),
   created_at: z.string().optional(),
   to: z.array(z.string()).optional(),
   cc: z.array(z.string()).optional(),
@@ -105,6 +106,7 @@ export const SearchFiltersSchema = z.object({
     .optional()
     .describe('Filter by the customer email address on the conversation.'),
   number: z.number().optional().describe('Look up a single conversation by its ticket number.'),
+  tag: z.string().trim().min(1).optional().describe('Filter by FreeScout tag name.'),
   assignee: z.union([z.literal('unassigned'), z.literal('any'), z.number()]).optional(),
   updatedSince: z.string().optional(), // ISO date or relative like "7d", "24h"
   createdSince: z.string().optional(),
@@ -115,6 +117,76 @@ export const SearchFiltersSchema = z.object({
   pageSize: z.number().min(1).max(100).optional(),
   includeLastMessage: z.boolean().optional(), // Include the most recent message for each ticket
 });
+
+export const TagToolInputSchema = z
+  .object({
+    action: z
+      .enum(['list', 'add', 'remove', 'replace'])
+      .describe('Operation to perform; replace with an empty tags array clears all ticket tags.'),
+    ticket: z
+      .string()
+      .trim()
+      .min(1)
+      .optional()
+      .describe(
+        'Ticket ID, number, or URL. Required for add, remove, and replace; optional for list.'
+      ),
+    tags: z
+      .array(z.string().trim().min(1))
+      .optional()
+      .describe(
+        'Tag names for an update; required for add, remove, or replace. An empty list is allowed only for replace.'
+      ),
+    page: z.number().int().min(1).optional().describe('Page to list; list action only.'),
+    pageSize: z
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe('List page size, at most 100; list action only.'),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === 'list') {
+      if (value.tags !== undefined)
+        ctx.addIssue({
+          code: 'custom',
+          message: 'tags are only valid for updates',
+          path: ['tags'],
+        });
+    } else {
+      if (!value.ticket)
+        ctx.addIssue({
+          code: 'custom',
+          message: 'ticket is required for updates',
+          path: ['ticket'],
+        });
+      if (!value.tags || (value.action !== 'replace' && value.tags.length === 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'tags are required (empty only for replace)',
+          path: ['tags'],
+        });
+      }
+      if (value.page !== undefined || value.pageSize !== undefined)
+        ctx.addIssue({ code: 'custom', message: 'pagination is only valid for list' });
+    }
+  });
+
+export const TagPageSchema = z
+  .object({
+    _embedded: z
+      .object({ tags: z.array(z.object({ name: z.string().min(1) }).passthrough()) })
+      .passthrough(),
+    page: z
+      .object({
+        number: z.number().int().min(1),
+        totalPages: z.number().int().min(0).max(1000),
+        totalElements: z.number().int().min(0),
+      })
+      .passthrough(),
+  })
+  .passthrough();
 
 // TypeScript types inferred from Zod schemas
 export type FreeScoutAttachment = z.infer<typeof AttachmentSchema>;

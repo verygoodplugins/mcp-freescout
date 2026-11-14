@@ -150,7 +150,7 @@ Fetch a FreeScout ticket with all its details and conversation threads.
 **Parameters:**
 
 - `ticket` (required): Ticket ID, number, or FreeScout URL
-- `includeThreads` (optional): Include conversation threads (default: true)
+- `includeThreads` (optional): Include conversation threads (default: true). When false, threads are omitted from the result, though FreeScout may still include them in the upstream HTTP response.
 
 **Natural Language Examples:**
 

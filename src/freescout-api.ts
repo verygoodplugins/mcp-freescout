@@ -382,7 +382,14 @@ export class FreeScoutAPI {
     includeThreads: boolean = true
   ): Promise<FreeScoutConversation> {
     const embed = includeThreads ? '?embed=threads' : '';
-    return this.request<FreeScoutConversation>(`/conversations/${ticketId}${embed}`);
+    const conversation = await this.request<FreeScoutConversation>(
+      `/conversations/${ticketId}${embed}`
+    );
+    if (includeThreads || !conversation._embedded) return conversation;
+
+    const embedded = { ...conversation._embedded };
+    delete embedded.threads;
+    return { ...conversation, _embedded: embedded };
   }
 
   async addThread(

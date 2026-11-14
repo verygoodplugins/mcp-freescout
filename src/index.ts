@@ -129,7 +129,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
           .boolean()
           .optional()
           .default(true)
-          .describe('Include all conversation threads'),
+          .describe('Include conversation threads in the result; false omits them from the output'),
       }),
     },
     async ({ ticket, includeThreads }) => {

@@ -81,6 +81,27 @@ describe('FreeScoutAPI', () => {
       expect(parsed.subject).toBe('Test Issue');
     });
 
+    it('omits threads from the returned detail when FreeScout embeds them by default', async () => {
+      const response = {
+        ...mockConversationResponse,
+        _embedded: {
+          ...mockConversationResponse._embedded,
+          threads: [{ id: 9, type: 'customer', body: 'Private message' }],
+        },
+      };
+      mockFetch.mockResolvedValue({ ok: true, status: 200, json: async () => response });
+
+      const withoutThreads = await api.getConversation('123', false);
+      expect(mockFetch.mock.calls[0][0]).toBe(`${mockBaseUrl}/api/conversations/123`);
+      expect(withoutThreads._embedded).not.toHaveProperty('threads');
+      expect(withoutThreads._embedded?.customer).toEqual(response._embedded.customer);
+      expect(withoutThreads.subject).toBe(response.subject);
+      expect(response._embedded.threads).toHaveLength(1);
+
+      const withThreads = await api.getConversation('123', true);
+      expect(withThreads._embedded?.threads).toEqual(response._embedded.threads);
+    });
+
     it('should retry on transient failures', async () => {
       mockFetch.mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce({
         ok: true,

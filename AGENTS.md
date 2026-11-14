@@ -26,7 +26,9 @@ npm run format         # Format source files with Prettier
   object results.
 - Keep protocol traffic on stdout only. Send diagnostics to stderr; do not use
   `console.log`, `console.info`, or `console.debug` in server code.
-- Validate required configuration at startup, but never log credential values.
+- Resolve `FREESCOUT_URL` and `FREESCOUT_API_KEY` on the first tool call, not at
+  startup, so the server answers `initialize` and lists tools without credentials
+  (sandboxed scanners start it with none). Never log credential values.
 - Keep API access behind a focused client module and test it with mocked
   responses.
 - Before opening a change, run `npm run lint`, `npm run build`, and `npm test`.

@@ -36,6 +36,11 @@ export interface BuildServerOptions {
   version?: string;
 }
 
+interface ResolvedRuntime {
+  api: FreeScoutApiPort;
+  defaultUserId: number;
+}
+
 interface RuntimeConfiguration {
   url: string;
   apiKey: string;
@@ -60,6 +65,11 @@ function loadRuntimeConfiguration(): RuntimeConfiguration {
   return { url, apiKey, defaultUserId };
 }
 
+function hasFreeScoutCredentials(): boolean {
+  loadEnv();
+  return Boolean(process.env.FREESCOUT_URL && process.env.FREESCOUT_API_KEY);
+}
+
 const allowedThreadTypes = new Set(['customer', 'message', 'note']);
 type ThreadType = 'customer' | 'message' | 'note';
 
@@ -76,10 +86,27 @@ const normalizeThreadBody = (body: unknown) => (typeof body === 'string' ? body 
  * factory for both the legacy 2025 handshake and the 2026 protocol era.
  */
 export function buildServer(options: BuildServerOptions = {}): McpServer {
-  const runtime = options.api ? undefined : loadRuntimeConfiguration();
-  const api = options.api ?? new FreeScoutAPI(runtime!.url, runtime!.apiKey);
   const analyzer = options.analyzer ?? new TicketAnalyzer();
-  const defaultUserId = options.defaultUserId ?? runtime?.defaultUserId ?? 1;
+
+  // FreeScout credentials are resolved on the first tool call, not here, so the
+  // server can answer initialize and tools/list without FREESCOUT_URL and
+  // FREESCOUT_API_KEY. A failed lookup is not cached, so it is re-checked on
+  // the next call.
+  let resolved: ResolvedRuntime | undefined;
+  const runtime = (): ResolvedRuntime => {
+    if (resolved) return resolved;
+    if (options.api) {
+      resolved = { api: options.api, defaultUserId: options.defaultUserId ?? 1 };
+    } else {
+      const config = loadRuntimeConfiguration();
+      resolved = {
+        api: new FreeScoutAPI(config.url, config.apiKey),
+        defaultUserId: options.defaultUserId ?? config.defaultUserId,
+      };
+    }
+    return resolved;
+  };
+
   const server = new McpServer({
     name: 'mcp-freescout',
     version: options.version ?? packageJson.version,
@@ -102,6 +129,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket, includeThreads }) => {
+      const { api } = runtime();
       const ticketId = api.parseTicketInput(ticket);
       const conversation = await api.getConversation(ticketId, includeThreads ?? true);
 
@@ -124,6 +152,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket }) => {
+      const { api } = runtime();
       const ticketId = api.parseTicketInput(ticket);
       const conversation = await api.getConversation(ticketId, true);
       const analysis = analyzer.analyzeConversation(conversation);
@@ -149,6 +178,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket, note, userId }) => {
+      const { api, defaultUserId } = runtime();
       const ticketId = api.parseTicketInput(ticket);
       const actualUserId = userId ?? defaultUserId;
 
@@ -185,6 +215,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket, status, assignTo, userId }) => {
+      const { api, defaultUserId } = runtime();
       const ticketId = api.parseTicketInput(ticket);
 
       const updates: {
@@ -245,6 +276,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket, replyText, userId, to, cc, bcc }) => {
+      const { api, defaultUserId } = runtime();
       const ticketId = api.parseTicketInput(ticket);
       const actualUserId = userId ?? defaultUserId;
       const requestedRecipients: FreeScoutRecipients = { to, cc, bcc };
@@ -308,6 +340,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       }),
     },
     async ({ ticket }) => {
+      const { api } = runtime();
       const ticketId = api.parseTicketInput(ticket);
       const conversation = await api.getConversation(ticketId, true);
       const analysis = analyzer.analyzeConversation(conversation);
@@ -369,6 +402,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       inputSchema: SearchFiltersSchema,
     },
     async (filters) => {
+      const { api } = runtime();
       const results = await api.searchConversations(filters);
       const conversations = results._embedded?.conversations || [];
 
@@ -440,6 +474,7 @@ export function buildServer(options: BuildServerOptions = {}): McpServer {
       inputSchema: z.object({}),
     },
     async () => {
+      const { api } = runtime();
       const mailboxes = await api.getMailboxes();
 
       return {
@@ -455,10 +490,8 @@ export function startStdioServer(options: Omit<ServeStdioOptions, 'onerror'> = {
   // Preserve the original launcher PID before any startup work can yield.
   const parentPid = process.ppid;
 
-  // Fail fast before opening stdio, while buildServer still returns a fresh
-  // isolated instance for each legacy or modern connection.
-  loadRuntimeConfiguration();
-
+  // Credentials are not required to start: buildServer resolves them on the
+  // first tool call, so clients can still initialize and list tools without them.
   const handle = serveStdio(() => buildServer(), {
     ...options,
     onerror: (error) => {
@@ -479,6 +512,11 @@ function main(): void {
   try {
     startStdioServer();
     console.error(`FreeScout MCP Server v${packageJson.version} running...`);
+    if (!hasFreeScoutCredentials()) {
+      console.error(
+        'FreeScout credentials are not set: tool calls will fail until FREESCOUT_URL and FREESCOUT_API_KEY are configured.'
+      );
+    }
   } catch (error) {
     console.error(
       'FreeScout MCP server startup error:',

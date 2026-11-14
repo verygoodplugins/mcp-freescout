@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0](https://github.com/verygoodplugins/mcp-freescout/compare/v3.1.0...v3.2.0) (2026-11-14)
+
+
+### Features
+
+* **tags:** manage tags and preserve thread dates ([#130](https://github.com/verygoodplugins/mcp-freescout/issues/130)) ([4b0019e](https://github.com/verygoodplugins/mcp-freescout/commit/4b0019e08a193c2c4d14df95c1206039651416fe))
+
+
+### Bug Fixes
+
+* **deps:** refresh vulnerable dependency lockfile ([#123](https://github.com/verygoodplugins/mcp-freescout/issues/123)) ([4049cce](https://github.com/verygoodplugins/mcp-freescout/commit/4049ccee24fe245cee157ec90b8d287bffeced10))
+* inherit draft reply recipients from the last outbound reply ([#92](https://github.com/verygoodplugins/mcp-freescout/issues/92)) ([4e48355](https://github.com/verygoodplugins/mcp-freescout/commit/4e48355d837841342d7aa3d21b59ba0efa07a4c2))
+* **mcp:** declare tool safety annotations ([#126](https://github.com/verygoodplugins/mcp-freescout/issues/126)) ([a09d1f5](https://github.com/verygoodplugins/mcp-freescout/commit/a09d1f57b02a5e6aa141663b6cf681035bee7009))
+* start and list tools without FreeScout credentials ([#122](https://github.com/verygoodplugins/mcp-freescout/issues/122)) ([fd4f612](https://github.com/verygoodplugins/mcp-freescout/commit/fd4f61215f7998de96a5d4b37133e25648f37849))
+* **test:** limit discovery to project source ([#125](https://github.com/verygoodplugins/mcp-freescout/issues/125)) ([933f1e6](https://github.com/verygoodplugins/mcp-freescout/commit/933f1e652abb960b4dc0931d085ff095c4908159))
+* **threads:** accept empty creation responses ([#129](https://github.com/verygoodplugins/mcp-freescout/issues/129)) ([7696b82](https://github.com/verygoodplugins/mcp-freescout/commit/7696b82a918474b0815f190b722cd3775d3c0d68))
+* **tickets:** omit threads when excluded ([#128](https://github.com/verygoodplugins/mcp-freescout/issues/128)) ([a266f93](https://github.com/verygoodplugins/mcp-freescout/commit/a266f93e2d1c04ca077b8a174bdbd2521ba27804))
+
 ## [3.1.0](https://github.com/verygoodplugins/mcp-freescout/compare/v3.0.1...v3.1.0) (2026-08-28)
 
 
